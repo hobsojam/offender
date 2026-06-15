@@ -1,4 +1,5 @@
 #include "game.h"
+#include "game_logic.h"
 #include "radar.h"
 #include "hud.h"
 #include <cmath>
@@ -363,32 +364,37 @@ void Game::doHyperspace() {
 }
 
 void Game::addScore(int points) {
-    if (points <= 0) return;
+    ScoreState scoreState = {score, hiScore, lives};
+    int extraLives = AddScore(scoreState, points, EXTRA_LIFE_EVERY);
+    score = scoreState.score;
+    hiScore = scoreState.hiScore;
+    lives = scoreState.lives;
 
-    int oldScore = score;
-    score += points;
-    if (score > hiScore) hiScore = score;
-
-    int oldMilestone = oldScore / EXTRA_LIFE_EVERY;
-    int newMilestone = score / EXTRA_LIFE_EVERY;
-    if (newMilestone > oldMilestone) {
-        lives += newMilestone - oldMilestone;
+    if (extraLives > 0)
         audio.playExtraLife();
-    }
 }
 
 void Game::releaseHumanoid(int humIdx, float worldX, bool falling) {
     if (humIdx < 0 || humIdx >= humCount) return;
 
     Humanoid& h = hums[humIdx];
-    h.wx = wrapX(worldX);
-    h.groundY = world.terrainY(h.wx);
-    h.beingCarried = false;
-    h.falling = falling;
-    h.vy = 0.f;
+    float releaseX = wrapX(worldX);
+    HumanoidReleaseState releaseState = {
+        h.wx,
+        h.y,
+        h.groundY,
+        h.vy,
+        h.falling,
+        h.beingCarried
+    };
+    ReleaseHumanoid(releaseState, releaseX, world.terrainY(releaseX), falling);
 
-    if (!falling && h.y > h.groundY)
-        h.y = h.groundY;
+    h.wx = releaseState.wx;
+    h.y = releaseState.y;
+    h.groundY = releaseState.groundY;
+    h.vy = releaseState.vy;
+    h.falling = releaseState.falling;
+    h.beingCarried = releaseState.beingCarried;
 }
 
 // -----------------------------------------------------------------------
