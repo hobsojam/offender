@@ -1,16 +1,12 @@
 #include "world.h"
+#include "random.h"
 #include <cmath>
-#include <cstdlib>
-
-static float randf(float lo, float hi) {
-    return lo + (float)rand() / (float)RAND_MAX * (hi - lo);
-}
 
 void World::init() {
     camX = 0.f;
-    float p1 = randf(0.f, 2.f * PI);
-    float p2 = randf(0.f, 2.f * PI);
-    float p3 = randf(0.f, 2.f * PI);
+    float p1 = RandomFloat(0.f, 2.f * PI);
+    float p2 = RandomFloat(0.f, 2.f * PI);
+    float p3 = RandomFloat(0.f, 2.f * PI);
     for (int i = 0; i < TERR_NODES; i++) {
         float t = (float)i / TERR_NODES * 2.f * PI;
         float y = GROUND_BASE
@@ -20,7 +16,7 @@ void World::init() {
         terrain[i] = y;
     }
     for (int i = 0; i < NUM_STARS; i++)
-        stars[i] = { randf(0.f, WORLD_W), randf(PLAY_TOP + 15.f, 550.f) };
+        stars[i] = { RandomFloat(0.f, WORLD_W), RandomFloat(PLAY_TOP + 15.f, 550.f) };
 }
 
 float World::terrainY(float wx) const {

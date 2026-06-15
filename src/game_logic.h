@@ -48,8 +48,8 @@ inline void ReleaseHumanoid(HumanoidReleaseState& state, float worldX,
 inline std::string JoinPath(const std::string& dir, const std::string& name) {
     if (dir.empty()) return name;
 
-    char last = dir[dir.size() - 1];
-    if (last == '/' || last == '\\') return dir + name;
+    if (char last = dir[dir.size() - 1]; last == '/' || last == '\\')
+        return dir + name;
 
 #ifdef _WIN32
     return dir + "\\" + name;

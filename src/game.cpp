@@ -2,6 +2,7 @@
 #include "game_logic.h"
 #include "radar.h"
 #include "hud.h"
+#include "random.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -11,10 +12,6 @@
 #include <filesystem>
 #include <string>
 #include <system_error>
-
-static float randf(float lo, float hi) {
-    return lo + (float)rand() / (float)RAND_MAX * (hi - lo);
-}
 
 static std::string envOrEmpty(const char* name) {
     const char* value = getenv(name);
@@ -59,7 +56,7 @@ void Game::init() {
                             : (unsigned)std::chrono::system_clock::now()
                                   .time_since_epoch()
                                   .count();
-    srand(seed);
+    SeedRandom(seed);
     world.init();
     audio.init();
     sprites.load();
@@ -110,7 +107,7 @@ void Game::startWave(int prevSurvivors) {
                                    : std::min(prevSurvivors + 1, HUM_COUNT);
     float spacing = WORLD_W / humCount;
     for (int i = 0; i < humCount; i++) {
-        float wx = randf(i * spacing, (i + 1) * spacing);
+        float wx = RandomFloat(i * spacing, (i + 1) * spacing);
         float gy = world.terrainY(wx);
         hums[i].init(wx, gy);
     }
@@ -134,8 +131,8 @@ void Game::spawnWaveEnemies() {
 
     float spacing = WORLD_W / landerCount;
     for (int i = 0; i < landerCount && enemyCount < MAX_ENEMIES; i++) {
-        float wx = randf(i * spacing, (i + 1) * spacing);
-        float y  = randf(PLAY_TOP + 60.f, PLAY_TOP + 200.f);
+        float wx = RandomFloat(i * spacing, (i + 1) * spacing);
+        float y  = RandomFloat(PLAY_TOP + 60.f, PLAY_TOP + 200.f);
         enemies[enemyCount++].initLander(wx, y, sm);
     }
 }
@@ -160,7 +157,7 @@ void Game::startRespawn() {
         return;
     }
     // Respawn after pause
-    float startX = wrapX(player.pos.x + randf(-300.f, 300.f));
+    float startX = wrapX(player.pos.x + RandomFloat(-300.f, 300.f));
     float gy     = world.terrainY(startX);
     player.init(startX, gy);
     state      = GameState::PLAYER_DEAD;
@@ -339,8 +336,8 @@ void Game::updatePlaying(float dt) {
     if (baitTimer >= baitInterval) {
         baitTimer -= baitInterval * 0.5f;
         if (enemyCount < MAX_ENEMIES) {
-            float wx = wrapX(player.pos.x + randf(300.f, 500.f) * (randf(0,1) > 0.5f ? 1 : -1));
-            enemies[enemyCount++].initBaiter(wx, player.pos.y + randf(-80.f, 80.f), sm);
+            float wx = wrapX(player.pos.x + RandomFloat(300.f, 500.f) * (RandomFloat(0.f, 1.f) > 0.5f ? 1 : -1));
+            enemies[enemyCount++].initBaiter(wx, player.pos.y + RandomFloat(-80.f, 80.f), sm);
         }
     }
 
@@ -443,15 +440,15 @@ void Game::smartBomb() {
 
 void Game::doHyperspace() {
     audio.playHyper();
-    float newX = randf(0.f, WORLD_W);
-    float newY = randf(PLAY_TOP + 60.f, P_MAX_Y - 20.f);
+    float newX = RandomFloat(0.f, WORLD_W);
+    float newY = RandomFloat(PLAY_TOP + 60.f, P_MAX_Y - 20.f);
     player.pos.x = newX;
     player.pos.y = newY;
     player.vel   = {0.f, 0.f};
     spawnExplosion({newX, newY}, {100, 200, 255, 255}, 12, 90.f);
 
     // 10% chance hyperspace kills you
-    if (randf(0.f, 1.f) < 0.1f) {
+    if (RandomFloat(0.f, 1.f) < 0.1f) {
         spawnExplosion({newX, newY}, {255, 200, 80, 255}, 20, 130.f);
         player.alive = false;
         shakeTimer   = SHAKE_DURATION;
@@ -629,13 +626,13 @@ void Game::spawnExplosion(Vector2 pos, Color col, int count, float spd) {
     for (int i = 0; i < count; i++) {
         for (int j = 0; j < MAX_PARTICLES; j++) {
             if (!particles[j].active) {
-                float angle = randf(0.f, 2.f * PI);
-                float speed = randf(spd * 0.3f, spd);
+                float angle = RandomFloat(0.f, 2.f * PI);
+                float speed = RandomFloat(spd * 0.3f, spd);
                 particles[j].pos     = pos;
                 particles[j].vel     = { cosf(angle) * speed, sinf(angle) * speed };
-                particles[j].life    = randf(0.3f, 0.8f);
+                particles[j].life    = RandomFloat(0.3f, 0.8f);
                 particles[j].maxLife = particles[j].life;
-                particles[j].size    = randf(2.f, 5.f);
+                particles[j].size    = RandomFloat(2.f, 5.f);
                 particles[j].col     = col;
                 particles[j].active  = true;
                 break;
@@ -687,8 +684,8 @@ void Game::updateShake(float dt) {
     if (shakeTimer > 0.f) {
         shakeTimer -= dt;
         float mag = (shakeTimer / SHAKE_DURATION) * SHAKE_AMT;
-        shakeX = randf(-mag, mag);
-        shakeY = randf(-mag, mag);
+        shakeX = RandomFloat(-mag, mag);
+        shakeY = RandomFloat(-mag, mag);
     } else {
         shakeX = shakeY = 0.f;
     }
