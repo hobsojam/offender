@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
-#include <ctime>
+#include <chrono>
 
 static float randf(float lo, float hi) {
     return lo + (float)rand() / (float)RAND_MAX * (hi - lo);
@@ -15,7 +15,9 @@ static float randf(float lo, float hi) {
 void Game::init() {
     const char* seedEnv = getenv("OFFENDER_SEED");
     unsigned seed = seedEnv ? (unsigned)strtoul(seedEnv, nullptr, 10)
-                            : (unsigned)time(nullptr);
+                            : (unsigned)std::chrono::system_clock::now()
+                                  .time_since_epoch()
+                                  .count();
     srand(seed);
     world.init();
     audio.init();
