@@ -425,6 +425,10 @@ void Game::addScore(int points) {
     lives = scoreState.lives;
 }
 
+void Game::loseScore(int points) {
+    score = (score > points) ? score - points : 0;
+}
+
 void Game::releaseHumanoid(int humIdx, float worldX, bool falling) {
     if (humIdx < 0 || humIdx >= humCount) return;
 
@@ -492,6 +496,27 @@ void Game::checkCollisions() {
                                                    Color{255,120,60,255});
                 audio.playExplode();
                 shakeTimer = SHAKE_DURATION * 0.5f;
+                break;
+            }
+        }
+    }
+
+    // Lasers vs humanoids (friendly fire)
+    for (int li = 0; li < MAX_LASERS; li++) {
+        Laser& la = lasers[li];
+        if (!la.active) continue;
+        for (int hi = 0; hi < humCount; hi++) {
+            Humanoid& h = hums[hi];
+            if (!h.alive) continue;
+            float dx = absf(wrapDX(la.wx, h.wx));
+            float dy = absf(la.y - h.y);
+            if (dx < (LASER_W + HUM_W) * 0.5f && dy < (LASER_H + HUM_H) * 0.5f) {
+                la.active      = false;
+                h.alive        = false;
+                h.beingCarried = false;
+                spawnExplosion({h.wx, h.y}, {255, 80, 80, 255}, 8, 80.f);
+                loseScore(SC_HUM_KILL);
+                audio.playExplode();
                 break;
             }
         }

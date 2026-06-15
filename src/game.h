@@ -59,6 +59,7 @@ private:
     void smartBomb();
     void doHyperspace();
     void addScore(int points);
+    void loseScore(int points);
     void releaseHumanoid(int humIdx, float worldX, bool falling);
 
     void checkCollisions();
