@@ -10,6 +10,7 @@ void Humanoid::init(float worldX, float terrainY) {
     alive           = true;
     falling         = false;
     beingCarried    = false;
+    doomedToFall    = false;
     carriedByPlayer = false;
     targeted        = false;
     carrierIdx      = -1;

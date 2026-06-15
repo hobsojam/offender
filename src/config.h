@@ -69,6 +69,7 @@ static constexpr int   SC_BAITER        = 200;
 static constexpr int   SC_RESCUE        = 500;
 static constexpr int   SC_CATCH         = 250;
 static constexpr int   SC_HUM_BONUS     = 100;
+static constexpr int   SC_LAND          = 100;
 static constexpr int   SC_HUM_KILL      = 250;
 static constexpr int   EXTRA_LIFE_EVERY = 10000;
 
@@ -85,3 +86,4 @@ static constexpr float SHAKE_AMT       = 6.f;
 static constexpr int   MAX_PARTICLES    = 256;
 static constexpr int   MAX_ENEMIES      = 80;
 static constexpr int   MAX_SHOTS        = 32;
+static constexpr int   MAX_POPUPS       = 16;

@@ -147,6 +147,7 @@ void Game::startRespawn() {
         h.carriedByPlayer = false;
         h.falling         = true;
         h.vy              = 0.f;
+        h.doomedToFall    = h.y < SCREEN_H * 0.5f;
         player.carryHumIdx = -1;
     }
 
@@ -203,6 +204,7 @@ void Game::update(float dt) {
     }
 
     updateParticles(dt);
+    updatePopups(dt);
     updateShake(dt);
 
     if (state == GameState::PLAYING    || state == GameState::PAUSED ||
@@ -240,6 +242,7 @@ void Game::updatePlaying(float dt) {
             h.y             = gy;
             h.vy            = 0.f;
             h.carriedByPlayer = false;
+            h.doomedToFall    = false;
             player.carryHumIdx = -1;
             addScore(SC_RESCUE);
             audio.playRescue();
@@ -311,9 +314,23 @@ void Game::updatePlaying(float dt) {
         }
     }
 
-    // Update humanoids
-    for (int i = 0; i < humCount; i++)
+    // Update humanoids; resolve landings
+    for (int i = 0; i < humCount; i++) {
+        bool wasFalling = hums[i].falling;
+        bool wasDoomed  = hums[i].doomedToFall;
         hums[i].update(dt);
+        if (wasFalling && !hums[i].falling && hums[i].alive) {
+            if (wasDoomed) {
+                hums[i].alive        = false;
+                hums[i].doomedToFall = false;
+                spawnExplosion({hums[i].wx, hums[i].groundY}, {255, 80, 80, 255}, 6, 60.f);
+                audio.playExplode();
+            } else {
+                addScore(SC_LAND);
+                spawnPopup(hums[i].wx, hums[i].groundY - 20.f, SC_LAND, {100, 255, 100, 255});
+            }
+        }
+    }
 
     // Baiter spawning — interval shrinks by 1s per wave, minimum 8s
     float baitInterval = std::max(BAIT_SPAWN_TIME - (wave - 1) * 1.f, 8.f);
@@ -479,12 +496,14 @@ void Game::releaseHumanoid(int humIdx, float worldX, bool falling) {
     };
     ReleaseHumanoid(releaseState, releaseX, world.terrainY(releaseX), falling);
 
-    h.wx = releaseState.wx;
-    h.y = releaseState.y;
-    h.groundY = releaseState.groundY;
+    h.wx           = releaseState.wx;
+    h.y            = releaseState.y;
+    h.groundY      = releaseState.groundY;
     h.vy           = releaseState.vy;
     h.falling      = releaseState.falling;
     h.beingCarried = releaseState.beingCarried;
+    h.doomedToFall = falling && (h.y < SCREEN_H * 0.5f);
+    h.carriedByPlayer = false;
     h.targeted     = false;
 }
 
@@ -594,6 +613,7 @@ void Game::checkCollisions() {
             if (dx < CATCH_DIST && dy < CATCH_DIST) {
                 h.falling         = false;
                 h.beingCarried    = false;
+                h.doomedToFall    = false;
                 h.carriedByPlayer = true;
                 player.carryHumIdx = i;
                 addScore(SC_CATCH);
@@ -634,6 +654,32 @@ void Game::updateParticles(float dt) {
         p.vel.y *= (1.f - dt * 1.5f);
         p.life -= dt;
         if (p.life <= 0.f) { p.active = false; }
+    }
+}
+
+void Game::spawnPopup(float wx, float y, int points, Color col) {
+    for (int i = 0; i < MAX_POPUPS; i++) {
+        if (!popups[i].active) {
+            popups[i].wx      = wx;
+            popups[i].y       = y;
+            popups[i].vy      = -40.f;
+            popups[i].life    = 1.4f;
+            popups[i].maxLife = 1.4f;
+            popups[i].col     = col;
+            popups[i].active  = true;
+            snprintf(popups[i].text, sizeof(popups[i].text), "+%d", points);
+            break;
+        }
+    }
+}
+
+void Game::updatePopups(float dt) {
+    for (int i = 0; i < MAX_POPUPS; i++) {
+        ScorePopup& p = popups[i];
+        if (!p.active) continue;
+        p.y    += p.vy * dt;
+        p.life -= dt;
+        if (p.life <= 0.f) p.active = false;
     }
 }
 
@@ -731,6 +777,18 @@ void Game::drawPlaying() const {
         float sx = wsX(p.pos.x, world.camX) + shakeX;
         float sy = p.pos.y + shakeY;
         DrawCircle((int)sx, (int)sy, p.size * alpha, c);
+    }
+
+    // Score popups
+    for (int i = 0; i < MAX_POPUPS; i++) {
+        const ScorePopup& p = popups[i];
+        if (!p.active) continue;
+        float alpha = p.life / p.maxLife;
+        Color c = p.col;
+        c.a = (unsigned char)(alpha * 255.f);
+        float sx = wsX(p.wx, world.camX) + shakeX;
+        DrawText(p.text, (int)(sx - MeasureText(p.text, 14) * 0.5f),
+                 (int)(p.y + shakeY), 14, c);
     }
 
     // Radar + HUD (always on top, no shake)
