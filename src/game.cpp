@@ -18,11 +18,17 @@ void Game::init() {
     memset(particles, 0, sizeof(particles));
     memset(lasers,    0, sizeof(lasers));
     memset(shots,     0, sizeof(shots));
-    state     = GameState::TITLE;
-    hiScore   = 0;
+    state   = GameState::TITLE;
+    hiScore = 0;
+
+    FILE* f = fopen("hiscore.dat", "r");
+    if (f) { fscanf(f, "%d", &hiScore); fclose(f); }
 }
 
 void Game::shutdown() {
+    FILE* f = fopen("hiscore.dat", "w");
+    if (f) { fprintf(f, "%d\n", hiScore); fclose(f); }
+
     audio.shutdown();
 }
 
@@ -38,6 +44,7 @@ void Game::startNewGame() {
     memset(particles, 0, sizeof(particles));
     world.init();
     startWave();
+    audio.startBGM();
 }
 
 void Game::startWave() {
@@ -85,6 +92,7 @@ void Game::startRespawn() {
     lives--;
     if (lives <= 0) {
         if (score > hiScore) hiScore = score;
+        audio.stopBGM();
         state      = GameState::GAME_OVER;
         stateTimer = 0.f;
         return;
@@ -135,6 +143,10 @@ void Game::update(float dt) {
 
     updateParticles(dt);
     updateShake(dt);
+
+    if (state == GameState::PLAYING    || state == GameState::PAUSED ||
+        state == GameState::PLAYER_DEAD || state == GameState::WAVE_CLEAR)
+        audio.updateBGM();
 }
 
 void Game::updatePlaying(float dt) {
@@ -600,7 +612,7 @@ void Game::drawPlaying() const {
 
     // Controls reminder bottom-left (first 5 sec of wave 1)
     if (wave == 1 && baitTimer < 5.f) {
-        DrawText("ARROWS/WASD: Move   SPACE: Fire   B: Bomb   H: Hyperspace",
+        DrawText("ARROWS/WASD: Move   SPACE: Fire   B/Z: Bomb   H: Hyperspace",
                  8, SCREEN_H - 18, 10, {120, 120, 120, 200});
     }
 }
@@ -624,7 +636,7 @@ void Game::drawTitle() const {
     DrawText(sub, (SCREEN_W - sw) / 2, 260, 24, {0, 180, 0, 255});
 
     const char* ctrl = "ARROWS / WASD : Move     SPACE : Fire\n"
-                       "B : Smart Bomb           H : Hyperspace\n"
+                       "B / Z : Smart Bomb       H : Hyperspace\n"
                        "P : Pause                ESC : Quit";
     DrawText(ctrl, SCREEN_W / 2 - 220, 360, 20, {150, 200, 255, 255});
 
