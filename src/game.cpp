@@ -7,9 +7,48 @@
 #include <cstdio>
 #include <cstring>
 #include <chrono>
+#include <filesystem>
+#include <string>
+#include <system_error>
 
 static float randf(float lo, float hi) {
     return lo + (float)rand() / (float)RAND_MAX * (hi - lo);
+}
+
+static std::string envOrEmpty(const char* name) {
+    const char* value = getenv(name);
+    return value ? value : "";
+}
+
+static std::string hiScorePath() {
+    return BuildHiScorePath(envOrEmpty("APPDATA"),
+                            envOrEmpty("XDG_DATA_HOME"),
+                            envOrEmpty("HOME"),
+                            ".");
+}
+
+static constexpr const char* FALLBACK_HISCORE_PATH = "hiscore.dat";
+
+static bool ensureParentDirectory(const std::string& path) {
+    std::filesystem::path fsPath(path);
+    if (!fsPath.has_parent_path()) return true;
+
+    std::error_code ec;
+    return std::filesystem::create_directories(fsPath.parent_path(), ec) ||
+           std::filesystem::exists(fsPath.parent_path(), ec);
+}
+
+static FILE* openHiScoreFile(const char* mode) {
+    std::string path = hiScorePath();
+    if (mode[0] != 'w' || ensureParentDirectory(path)) {
+        if (FILE* f = fopen(path.c_str(), mode))
+            return f;
+    }
+
+    if (path != FALLBACK_HISCORE_PATH)
+        return fopen(FALLBACK_HISCORE_PATH, mode);
+
+    return nullptr;
 }
 
 // -----------------------------------------------------------------------
@@ -29,12 +68,12 @@ void Game::init() {
     state   = GameState::TITLE;
     hiScore = 0;
 
-    FILE* f = fopen("hiscore.dat", "r");
+    FILE* f = openHiScoreFile("r");
     if (f) { fscanf(f, "%d", &hiScore); fclose(f); }
 }
 
 void Game::shutdown() {
-    FILE* f = fopen("hiscore.dat", "w");
+    FILE* f = openHiScoreFile("w");
     if (f) { fprintf(f, "%d\n", hiScore); fclose(f); }
 
     sprites.unload();
