@@ -101,6 +101,7 @@ void Game::startWave(int prevSurvivors) {
     planetDestroyed = false;
     enemyCount      = 0;
     humCount        = 0;
+    bombs           = std::min(bombs + 1, MAX_BOMBS);
     memset(enemies, 0, sizeof(enemies));
     memset(hums,    0, sizeof(hums));
 
