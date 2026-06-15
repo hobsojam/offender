@@ -94,6 +94,7 @@ void Game::startNewGame() {
 void Game::startWave(int prevSurvivors) {
     world.init();
     baitTimer       = 0.f;
+    hintTimer       = 5.f;
     stateTimer      = 0.f;
     planetDestroyed = false;
     enemyCount      = 0;
@@ -223,6 +224,8 @@ void Game::updatePlaying(float dt) {
     // Hyperspace
     if (IsKeyPressed(KEY_H) || IsKeyPressed(KEY_LEFT_SHIFT))
         doHyperspace();
+
+    hintTimer -= dt;
 
     // Update player
     float gy = world.terrainY(player.pos.x);
@@ -366,6 +369,8 @@ void Game::updatePlaying(float dt) {
                 e.initMutant(e.wpos.x, e.wpos.y, e.speedMult);
         }
     }
+
+    compactEnemies();
 }
 
 void Game::updatePlayerDead(float dt) {
@@ -567,6 +572,7 @@ void Game::checkCollisions() {
                 h.beingCarried = false;
                 spawnExplosion({h.wx, h.y}, {255, 80, 80, 255}, 8, 80.f);
                 loseScore(SC_HUM_KILL);
+                spawnPopup(h.wx, h.y - 20.f, SC_HUM_KILL, {255, 80, 80, 255});
                 audio.playExplode();
                 break;
             }
@@ -624,20 +630,23 @@ void Game::checkCollisions() {
 // -----------------------------------------------------------------------
 void Game::spawnExplosion(Vector2 pos, Color col, int count, float spd) {
     for (int i = 0; i < count; i++) {
-        for (int j = 0; j < MAX_PARTICLES; j++) {
-            if (!particles[j].active) {
+        int start = particleNext;
+        do {
+            if (!particles[particleNext].active) {
                 float angle = RandomFloat(0.f, 2.f * PI);
                 float speed = RandomFloat(spd * 0.3f, spd);
-                particles[j].pos     = pos;
-                particles[j].vel     = { cosf(angle) * speed, sinf(angle) * speed };
-                particles[j].life    = RandomFloat(0.3f, 0.8f);
-                particles[j].maxLife = particles[j].life;
-                particles[j].size    = RandomFloat(2.f, 5.f);
-                particles[j].col     = col;
-                particles[j].active  = true;
+                particles[particleNext].pos     = pos;
+                particles[particleNext].vel     = { cosf(angle) * speed, sinf(angle) * speed };
+                particles[particleNext].life    = RandomFloat(0.3f, 0.8f);
+                particles[particleNext].maxLife = particles[particleNext].life;
+                particles[particleNext].size    = RandomFloat(2.f, 5.f);
+                particles[particleNext].col     = col;
+                particles[particleNext].active  = true;
+                particleNext = (particleNext + 1) % MAX_PARTICLES;
                 break;
             }
-        }
+            particleNext = (particleNext + 1) % MAX_PARTICLES;
+        } while (particleNext != start);
     }
 }
 
@@ -704,6 +713,17 @@ bool Game::allEnemiesDead() const {
     for (int i = 0; i < enemyCount; i++)
         if (enemies[i].alive) return false;
     return true;
+}
+
+void Game::compactEnemies() {
+    int i = 0;
+    while (i < enemyCount) {
+        if (!enemies[i].alive) {
+            enemies[i] = enemies[--enemyCount];
+        } else {
+            i++;
+        }
+    }
 }
 
 // -----------------------------------------------------------------------
@@ -801,7 +821,7 @@ void Game::drawPlaying() const {
     }
 
     // Controls reminder bottom-left (first 5 sec of wave 1)
-    if (wave == 1 && baitTimer < 5.f) {
+    if (wave == 1 && hintTimer > 0.f) {
         DrawText("ARROWS/WASD: Move   SPACE: Fire   B/Z: Bomb   H: Hyperspace",
                  8, SCREEN_H - 18, 10, {120, 120, 120, 200});
     }

@@ -10,7 +10,7 @@ struct AudioFX {
 
     // Call once per frame while gameplay is active
     void updateBGM() { if (bgm.stream.buffer && !IsSoundPlaying(bgm)) PlaySound(bgm); }
-    void startBGM()  { if (bgm.stream.buffer && !IsSoundPlaying(bgm)) PlaySound(bgm); }
+    void startBGM()  { if (bgm.stream.buffer) { StopSound(bgm); PlaySound(bgm); } }
     void stopBGM()   { StopSound(bgm); }
 
     void playFire()      const { if (fire.stream.buffer)      PlaySound(fire); }

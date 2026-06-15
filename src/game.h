@@ -36,6 +36,7 @@ private:
     int        bombs        = START_BOMBS;
     float      stateTimer   = 0.f;
     float      baitTimer        = 0.f;
+    float      hintTimer        = 0.f;
     bool       planetDestroyed  = false;
     float      shakeTimer   = 0.f;
     float      shakeX       = 0.f;
@@ -51,6 +52,7 @@ private:
     Humanoid   hums[HUM_COUNT]          = {};
     int        humCount                 = 0;
     Particle    particles[MAX_PARTICLES] = {};
+    int         particleNext             = 0;
     ScorePopup  popups[MAX_POPUPS]      = {};
 
     AudioFX    audio;
@@ -73,6 +75,7 @@ private:
     void releaseHumanoid(int humIdx, float worldX, bool falling);
 
     void checkCollisions();
+    void compactEnemies();
     bool hitPlayer(float ewx, float esy, float ew, float eh);
 
     void spawnExplosion(Vector2 pos, Color col, int count = 14, float spd = 110.f);
