@@ -3,6 +3,7 @@
 #include <random>
 
 static std::mt19937& randomEngine() {
+    // Gameplay RNG only; not suitable for security or cryptographic use.
     static std::mt19937 engine;
     return engine;
 }
