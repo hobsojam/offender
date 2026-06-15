@@ -9,11 +9,12 @@ struct Humanoid {
     float y;          // current screen Y
     float vy;         // fall velocity (when falling)
     bool  alive;
-    bool  falling;        // dropped by lander, in free fall
-    bool  beingCarried;   // attached to a lander
-    bool  doomedToFall;   // released from top half of screen — dies on impact
-    bool  targeted;       // a lander is descending toward this humanoid
-    int   carrierIdx;     // index in enemies array (-1 if none)
+    bool  falling;           // dropped by lander, in free fall
+    bool  beingCarried;      // attached to a lander
+    bool  doomedToFall;      // released from top half of screen — dies on impact
+    bool  carriedByPlayer;   // player caught this humanoid mid-air
+    bool  targeted;          // a lander is descending toward this humanoid
+    int   carrierIdx;        // index in enemies array (-1 if none)
 
     void init(float worldX, float terrrainY);
     void update(float dt);

@@ -10,6 +10,7 @@ void Player::init(float worldX, float groundY) {
     laserCD     = 0.f;
     invTimer    = INVINCIBLE_TIME;
     enginePhase = 0.f;
+    carryHumIdx = -1;
 }
 
 void Player::handleInput(float dt) {

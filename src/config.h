@@ -23,7 +23,7 @@ static constexpr float P_VY             = 270.f;
 static constexpr float P_W              = 28.f;
 static constexpr float P_H              = 12.f;
 static constexpr float P_MIN_Y          = PLAY_TOP + 20.f;
-static constexpr float P_MAX_Y          = 555.f;
+static constexpr float P_MAX_Y          = (float)SCREEN_H - 20.f;
 
 // Laser
 static constexpr float LASER_SPEED      = 1840.f;
