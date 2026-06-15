@@ -77,16 +77,17 @@ void Enemy::updateLander(float dt, const Vector2& pWPos,
 
         stateCD -= dt;
         if (stateCD <= 0.f) {
-            // Find nearest alive uncarried humanoid
+            // Find nearest alive, uncarried, untargeted humanoid
             float bestDist = 1e9f;
             int   bestIdx  = -1;
             for (int i = 0; i < humCount; i++) {
-                if (!hums[i].alive || hums[i].beingCarried) continue;
+                if (!hums[i].alive || hums[i].beingCarried || hums[i].targeted) continue;
                 float d = absf(wrapDX(wpos.x, hums[i].wx));
                 if (d < bestDist) { bestDist = d; bestIdx = i; }
             }
             if (bestIdx >= 0) {
                 humIdx = bestIdx;
+                hums[bestIdx].targeted = true;
                 lstate = LanderState::DESCENDING;
             } else {
                 stateCD = randf(1.5f, 3.f);
@@ -95,7 +96,7 @@ void Enemy::updateLander(float dt, const Vector2& pWPos,
     }
     else if (lstate == LanderState::DESCENDING && humIdx >= 0) {
         Humanoid& h = hums[humIdx];
-        if (!h.alive) { lstate = LanderState::WANDERING; humIdx = -1; stateCD = 1.f; return; }
+        if (!h.alive) { h.targeted = false; lstate = LanderState::WANDERING; humIdx = -1; stateCD = 1.f; return; }
 
         float dx = wrapDX(wpos.x, h.wx);
         float dy = h.y - wpos.y;
@@ -112,9 +113,10 @@ void Enemy::updateLander(float dt, const Vector2& pWPos,
     }
     else if (lstate == LanderState::GRABBING && humIdx >= 0) {
         Humanoid& h = hums[humIdx];
-        if (!h.alive) { lstate = LanderState::WANDERING; humIdx = -1; stateCD = 1.f; return; }
+        if (!h.alive) { h.targeted = false; lstate = LanderState::WANDERING; humIdx = -1; stateCD = 1.f; return; }
+        h.targeted     = false;  // no longer needs the reservation once carried
         h.beingCarried = true;
-        h.falling = false;
+        h.falling      = false;
         lstate = LanderState::CARRYING;
     }
     else if (lstate == LanderState::CARRYING && humIdx >= 0) {
