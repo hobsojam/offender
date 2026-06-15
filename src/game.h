@@ -47,7 +47,7 @@ private:
     Sprites    sprites;
 
     void startNewGame();
-    void startWave();
+    void startWave(int prevSurvivors = -1);
     void spawnWaveEnemies();
     void startRespawn();
 
