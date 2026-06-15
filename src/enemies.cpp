@@ -25,38 +25,41 @@ float Enemy::halfH() const {
     return 8.f;
 }
 
-void Enemy::initLander(float wx, float y) {
+void Enemy::initLander(float wx, float y, float sm) {
     type      = EnemyType::LANDER;
     wpos      = {wx, y};
-    vel       = {randf(-LAND_SPD * 0.5f, LAND_SPD * 0.5f), 0.f};
+    vel       = {randf(-LAND_SPD * sm * 0.5f, LAND_SPD * sm * 0.5f), 0.f};
     lstate    = LanderState::WANDERING;
     humIdx    = -1;
     shotCD    = randf(1.f, LAND_SHOT_CD);
     wobble    = randf(0.f, 2.f * PI);
     stateCD   = randf(1.f, 3.f);
+    speedMult = sm;
     alive     = true;
 }
 
-void Enemy::initMutant(float wx, float y) {
-    type   = EnemyType::MUTANT;
-    wpos   = {wx, y};
-    vel    = {};
-    humIdx = -1;
-    shotCD = randf(0.5f, MUTT_SHOT_CD);
-    wobble = randf(0.f, 2.f * PI);
-    stateCD = 0.f;
-    alive  = true;
+void Enemy::initMutant(float wx, float y, float sm) {
+    type      = EnemyType::MUTANT;
+    wpos      = {wx, y};
+    vel       = {};
+    humIdx    = -1;
+    shotCD    = randf(0.5f, MUTT_SHOT_CD);
+    wobble    = randf(0.f, 2.f * PI);
+    stateCD   = 0.f;
+    speedMult = sm;
+    alive     = true;
 }
 
-void Enemy::initBaiter(float wx, float y) {
-    type   = EnemyType::BAITER;
-    wpos   = {wx, y};
-    vel    = {};
-    humIdx = -1;
-    shotCD = randf(0.2f, BAIT_SHOT_CD);
-    wobble = randf(0.f, 2.f * PI);
-    stateCD = 0.f;
-    alive  = true;
+void Enemy::initBaiter(float wx, float y, float sm) {
+    type      = EnemyType::BAITER;
+    wpos      = {wx, y};
+    vel       = {};
+    humIdx    = -1;
+    shotCD    = randf(0.2f, BAIT_SHOT_CD);
+    wobble    = randf(0.f, 2.f * PI);
+    stateCD   = 0.f;
+    speedMult = sm;
+    alive     = true;
 }
 
 // -----------------------------------------------------------------------
@@ -74,16 +77,17 @@ void Enemy::updateLander(float dt, const Vector2& pWPos,
 
         stateCD -= dt;
         if (stateCD <= 0.f) {
-            // Find nearest alive uncarried humanoid
+            // Find nearest alive, uncarried, untargeted humanoid
             float bestDist = 1e9f;
             int   bestIdx  = -1;
             for (int i = 0; i < humCount; i++) {
-                if (!hums[i].alive || hums[i].beingCarried) continue;
+                if (!hums[i].alive || hums[i].beingCarried || hums[i].targeted) continue;
                 float d = absf(wrapDX(wpos.x, hums[i].wx));
                 if (d < bestDist) { bestDist = d; bestIdx = i; }
             }
             if (bestIdx >= 0) {
                 humIdx = bestIdx;
+                hums[bestIdx].targeted = true;
                 lstate = LanderState::DESCENDING;
             } else {
                 stateCD = randf(1.5f, 3.f);
@@ -92,7 +96,7 @@ void Enemy::updateLander(float dt, const Vector2& pWPos,
     }
     else if (lstate == LanderState::DESCENDING && humIdx >= 0) {
         Humanoid& h = hums[humIdx];
-        if (!h.alive) { lstate = LanderState::WANDERING; humIdx = -1; stateCD = 1.f; return; }
+        if (!h.alive) { h.targeted = false; lstate = LanderState::WANDERING; humIdx = -1; stateCD = 1.f; return; }
 
         float dx = wrapDX(wpos.x, h.wx);
         float dy = h.y - wpos.y;
@@ -101,23 +105,24 @@ void Enemy::updateLander(float dt, const Vector2& pWPos,
         if (dist < GRAB_DIST) {
             lstate = LanderState::GRABBING;
         } else {
-            float spd = LAND_SPD * 1.6f;
+            float spd = LAND_SPD * speedMult * 1.6f;
             wpos.x = wrapX(wpos.x + (dx / dist) * spd * dt);
-            wpos.y += (dy / dist) * LAND_VY * dt;
+            wpos.y += (dy / dist) * LAND_VY * speedMult * dt;
             wpos.y = clampf(wpos.y, PLAY_TOP + 20.f, groundY);
         }
     }
     else if (lstate == LanderState::GRABBING && humIdx >= 0) {
         Humanoid& h = hums[humIdx];
-        if (!h.alive) { lstate = LanderState::WANDERING; humIdx = -1; stateCD = 1.f; return; }
+        if (!h.alive) { h.targeted = false; lstate = LanderState::WANDERING; humIdx = -1; stateCD = 1.f; return; }
+        h.targeted     = false;  // no longer needs the reservation once carried
         h.beingCarried = true;
-        h.falling = false;
+        h.falling      = false;
         lstate = LanderState::CARRYING;
     }
     else if (lstate == LanderState::CARRYING && humIdx >= 0) {
         Humanoid& h = hums[humIdx];
         // Move upward
-        wpos.y -= LAND_VY * 2.f * dt;
+        wpos.y -= LAND_VY * speedMult * 2.f * dt;
         wpos.x = wrapX(wpos.x + sinf(wobble) * 15.f * dt);
         // Keep humanoid attached below us
         h.wx = wpos.x;
@@ -151,7 +156,7 @@ void Enemy::updateMutant(float dt, const Vector2& pWPos,
     float dy = pWPos.y - wpos.y;
     float dist = sqrtf(dx*dx + dy*dy);
     if (dist > 0.01f) {
-        float spd = MUTT_SPD + 30.f * sinf(wobble * 0.7f);
+        float spd = MUTT_SPD * speedMult + 30.f * sinf(wobble * 0.7f);
         vel.x = (dx / dist) * spd;
         vel.y = (dy / dist) * spd;
     }
@@ -175,8 +180,8 @@ void Enemy::updateBaiter(float dt, const Vector2& pWPos,
     float dy = pWPos.y - wpos.y;
     float dist = sqrtf(dx*dx + dy*dy);
     if (dist > 0.01f) {
-        vel.x = (dx / dist) * BAIT_SPD;
-        vel.y = (dy / dist) * BAIT_SPD * 0.6f;
+        vel.x = (dx / dist) * BAIT_SPD * speedMult;
+        vel.y = (dy / dist) * BAIT_SPD * speedMult * 0.6f;
     }
     wpos.x = wrapX(wpos.x + vel.x * dt);
     wpos.y = clampf(wpos.y + vel.y * dt, PLAY_TOP + 10.f, (float)SCREEN_H - 40.f);

@@ -11,13 +11,14 @@ struct Enemy {
     LanderState lstate;    // LANDER only
     int         humIdx;    // LANDER: index of target/carried humanoid (-1 = none)
     float       shotCD;
-    float       wobble;    // phase angle for sine wobble
-    float       stateCD;   // misc state timer
+    float       wobble;     // phase angle for sine wobble
+    float       stateCD;    // misc state timer
+    float       speedMult;  // per-wave speed multiplier
     bool        alive;
 
-    void  initLander(float wx, float y);
-    void  initMutant(float wx, float y);
-    void  initBaiter(float wx, float y);
+    void  initLander(float wx, float y, float speedMult = 1.f);
+    void  initMutant(float wx, float y, float speedMult = 1.f);
+    void  initBaiter(float wx, float y, float speedMult = 1.f);
 
     void  update(float dt, const Vector2& playerWPos,
                  Humanoid* hums, int humCount, float terrainY,

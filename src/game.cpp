@@ -90,17 +90,18 @@ void Game::startNewGame() {
     memset(lasers,    0, sizeof(lasers));
     memset(shots,     0, sizeof(shots));
     memset(particles, 0, sizeof(particles));
-    world.init();
     startWave();
     audio.startBGM();
 }
 
 void Game::startWave(int prevSurvivors) {
+    world.init();
     baitTimer       = 0.f;
     stateTimer      = 0.f;
     planetDestroyed = false;
     enemyCount      = 0;
     humCount        = 0;
+    bombs           = std::min(bombs + 1, MAX_BOMBS);
     memset(enemies, 0, sizeof(enemies));
     memset(hums,    0, sizeof(hums));
 
@@ -129,11 +130,13 @@ void Game::spawnWaveEnemies() {
     int landerCount = 3 + wave;
     if (landerCount > MAX_ENEMIES - 4) landerCount = MAX_ENEMIES - 4;
 
+    float sm = std::min(1.f + (wave - 1) * 0.1f, 2.f);
+
     float spacing = WORLD_W / landerCount;
     for (int i = 0; i < landerCount && enemyCount < MAX_ENEMIES; i++) {
         float wx = randf(i * spacing, (i + 1) * spacing);
         float y  = randf(PLAY_TOP + 60.f, PLAY_TOP + 200.f);
-        enemies[enemyCount++].initLander(wx, y);
+        enemies[enemyCount++].initLander(wx, y, sm);
     }
 }
 
@@ -283,7 +286,7 @@ void Game::updatePlaying(float dt) {
                 hums[e.humIdx].beingCarried = false;
                 hums[e.humIdx].alive = false;  // abducted!
             }
-            e.initMutant(e.wpos.x, e.wpos.y);
+            e.initMutant(e.wpos.x, e.wpos.y, e.speedMult);
             audio.playAbduct();
         }
 
@@ -312,13 +315,15 @@ void Game::updatePlaying(float dt) {
     for (int i = 0; i < humCount; i++)
         hums[i].update(dt);
 
-    // Baiter spawning
+    // Baiter spawning — interval shrinks by 1s per wave, minimum 8s
+    float baitInterval = std::max(BAIT_SPAWN_TIME - (wave - 1) * 1.f, 8.f);
+    float sm = std::min(1.f + (wave - 1) * 0.1f, 2.f);
     baitTimer += dt;
-    if (baitTimer >= BAIT_SPAWN_TIME) {
-        baitTimer -= BAIT_SPAWN_TIME * 0.5f;  // spawn periodically
+    if (baitTimer >= baitInterval) {
+        baitTimer -= baitInterval * 0.5f;
         if (enemyCount < MAX_ENEMIES) {
             float wx = wrapX(player.pos.x + randf(300.f, 500.f) * (randf(0,1) > 0.5f ? 1 : -1));
-            enemies[enemyCount++].initBaiter(wx, player.pos.y + randf(-80.f, 80.f));
+            enemies[enemyCount++].initBaiter(wx, player.pos.y + randf(-80.f, 80.f), sm);
         }
     }
 
@@ -344,7 +349,7 @@ void Game::updatePlaying(float dt) {
         for (int i = 0; i < enemyCount; i++) {
             Enemy& e = enemies[i];
             if (e.alive && e.type == EnemyType::LANDER)
-                e.initMutant(e.wpos.x, e.wpos.y);
+                e.initMutant(e.wpos.x, e.wpos.y, e.speedMult);
         }
     }
 }
@@ -426,8 +431,18 @@ void Game::doHyperspace() {
     player.pos.x = newX;
     player.pos.y = newY;
     player.vel   = {0.f, 0.f};
-    player.invTimer = INVINCIBLE_TIME * 0.5f;
     spawnExplosion({newX, newY}, {100, 200, 255, 255}, 12, 90.f);
+
+    // 10% chance hyperspace kills you
+    if (randf(0.f, 1.f) < 0.1f) {
+        spawnExplosion({newX, newY}, {255, 200, 80, 255}, 20, 130.f);
+        player.alive = false;
+        shakeTimer   = SHAKE_DURATION;
+        startRespawn();
+        return;
+    }
+
+    player.invTimer = INVINCIBLE_TIME * 0.5f;
 }
 
 void Game::addScore(int points) {
@@ -443,6 +458,10 @@ void Game::addScore(int points) {
     score = scoreState.score;
     hiScore = scoreState.hiScore;
     lives = scoreState.lives;
+}
+
+void Game::loseScore(int points) {
+    score = (score > points) ? score - points : 0;
 }
 
 void Game::releaseHumanoid(int humIdx, float worldX, bool falling) {
@@ -463,9 +482,10 @@ void Game::releaseHumanoid(int humIdx, float worldX, bool falling) {
     h.wx = releaseState.wx;
     h.y = releaseState.y;
     h.groundY = releaseState.groundY;
-    h.vy = releaseState.vy;
-    h.falling = releaseState.falling;
+    h.vy           = releaseState.vy;
+    h.falling      = releaseState.falling;
     h.beingCarried = releaseState.beingCarried;
+    h.targeted     = false;
 }
 
 // -----------------------------------------------------------------------
@@ -511,6 +531,27 @@ void Game::checkCollisions() {
                                                    Color{255,120,60,255});
                 audio.playExplode();
                 shakeTimer = SHAKE_DURATION * 0.5f;
+                break;
+            }
+        }
+    }
+
+    // Lasers vs humanoids (friendly fire)
+    for (int li = 0; li < MAX_LASERS; li++) {
+        Laser& la = lasers[li];
+        if (!la.active) continue;
+        for (int hi = 0; hi < humCount; hi++) {
+            Humanoid& h = hums[hi];
+            if (!h.alive) continue;
+            float dx = absf(wrapDX(la.wx, h.wx));
+            float dy = absf(la.y - h.y);
+            if (dx < (LASER_W + HUM_W) * 0.5f && dy < (LASER_H + HUM_H) * 0.5f) {
+                la.active      = false;
+                h.alive        = false;
+                h.beingCarried = false;
+                spawnExplosion({h.wx, h.y}, {255, 80, 80, 255}, 8, 80.f);
+                loseScore(SC_HUM_KILL);
+                audio.playExplode();
                 break;
             }
         }
