@@ -109,6 +109,54 @@ static Sound buildArpeggio(const float* freqs, int noteCount,
     return s;
 }
 
+// Two-voice A-minor ostinato: bass pedal + treble accents, loops via updateBGM().
+static Sound buildBGM() {
+    // 8 eighth-notes at 140 BPM  (0.214 s each, 1.714 s loop)
+    static const float bass[]   = { 110.f, 165.f, 110.f, 196.f, 110.f, 165.f, 131.f, 165.f };
+    static const float treble[] = { 440.f, 0.f,   330.f, 0.f,   440.f, 0.f,   392.f, 0.f   };
+    static const int   N        = 8;
+
+    int noteN = (int)(60.f / 140.f / 2.f * SR);  // 8th note at 140 BPM
+    if (noteN < 1) noteN = 1;
+    int total = noteN * N;
+    short* buf = (short*)malloc(total * sizeof(short));
+    if (!buf) return Sound{};
+
+    float bPhase = 0.f, tPhase = 0.f;
+    for (int i = 0; i < total; i++) {
+        int   note  = i / noteN;
+        float noteT = (float)(i % noteN) / noteN;
+        // Fast attack, linear decay — punchy 8-bit feel
+        float env = (noteT < 0.04f) ? noteT / 0.04f : 1.f - (noteT - 0.04f) / 0.96f;
+
+        float b = squareWave(bPhase, 0.5f) * 0.42f;
+        bPhase += bass[note] / SR;
+
+        float t = 0.f;
+        float tFreq = treble[note];
+        if (tFreq > 0.f) {
+            t = squareWave(tPhase, 0.125f) * 0.22f;
+        } else {
+            // Advance phase by previous note's freq so restart isn't a click
+            int prev = (note + N - 1) % N;
+            tFreq = treble[prev] > 0.f ? treble[prev] : 440.f;
+        }
+        tPhase += tFreq / SR;
+
+        buf[i] = (short)((b + t) * env * 32767.f);
+    }
+
+    Wave w = {};
+    w.frameCount = (unsigned int)total;
+    w.sampleRate = SR;
+    w.sampleSize = 16;
+    w.channels   = 1;
+    w.data       = buf;
+    Sound s = LoadSoundFromWave(w);
+    free(buf);
+    return s;
+}
+
 // ── sound definitions ──────────────────────────────────────────────────────
 void AudioFX::init() {
 
@@ -215,6 +263,8 @@ void AudioFX::init() {
         float notes[] = { 523.f, 659.f, 784.f, 1047.f };
         extraLife = buildArpeggio(notes, 4, 0.075f, 0.6f, 0.125f);
     }
+
+    bgm = buildBGM();
 }
 
 void AudioFX::shutdown() {
@@ -226,4 +276,5 @@ void AudioFX::shutdown() {
     UnloadSound(hyper);     hyper     = {};
     UnloadSound(die);       die       = {};
     UnloadSound(extraLife); extraLife = {};
+    UnloadSound(bgm);       bgm       = {};
 }
