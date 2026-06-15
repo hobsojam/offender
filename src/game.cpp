@@ -365,13 +365,17 @@ void Game::doHyperspace() {
 
 void Game::addScore(int points) {
     ScoreState scoreState = {score, hiScore, lives};
-    int extraLives = AddScore(scoreState, points, EXTRA_LIFE_EVERY);
+    if (int extraLives = AddScore(scoreState, points, EXTRA_LIFE_EVERY); extraLives > 0) {
+        score = scoreState.score;
+        hiScore = scoreState.hiScore;
+        lives = scoreState.lives;
+        audio.playExtraLife();
+        return;
+    }
+
     score = scoreState.score;
     hiScore = scoreState.hiScore;
     lives = scoreState.lives;
-
-    if (extraLives > 0)
-        audio.playExtraLife();
 }
 
 void Game::releaseHumanoid(int humIdx, float worldX, bool falling) {

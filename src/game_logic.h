@@ -24,8 +24,7 @@ inline int AddScore(ScoreState& state, int points, int extraLifeEvery) {
 
     int oldMilestone = oldScore / extraLifeEvery;
     int newMilestone = state.score / extraLifeEvery;
-    int extraLives = newMilestone - oldMilestone;
-    if (extraLives > 0) {
+    if (int extraLives = newMilestone - oldMilestone; extraLives > 0) {
         state.lives += extraLives;
         return extraLives;
     }
