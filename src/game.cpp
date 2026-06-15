@@ -43,8 +43,7 @@ static FILE* openHiScoreFile(const char* mode) {
             return f;
     }
 
-    std::string fallback = JoinPath(".", "hiscore.dat");
-    if (fallback != path)
+    if (std::string fallback = JoinPath(".", "hiscore.dat"); fallback != path)
         return fopen(fallback.c_str(), mode);
 
     return nullptr;
