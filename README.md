@@ -28,7 +28,7 @@ build\offender.exe
 | Left / Right arrows or A / D | Thrust horizontally (sets ship facing direction) |
 | Up / Down arrows or W / S | Move vertically |
 | Space or Left Ctrl | Fire laser |
-| B | Smart bomb — destroys all on-screen enemies (3 per wave) |
+| B or Z | Smart bomb — destroys all on-screen enemies (3 per wave) |
 | H or Left Shift | Hyperspace — random teleport |
 | P | Pause / Resume |
 | Enter | Start / confirm screens |
