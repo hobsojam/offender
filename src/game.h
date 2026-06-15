@@ -51,6 +51,7 @@ private:
     int        enemyCount               = 0;
     Humanoid   hums[HUM_COUNT]          = {};
     int        humCount                 = 0;
+    int        waveSurvivors            = 0;
     Particle    particles[MAX_PARTICLES] = {};
     int         particleNext             = 0;
     ScorePopup  popups[MAX_POPUPS]      = {};
@@ -91,4 +92,5 @@ private:
 
     int  liveHumCount()  const;
     bool allEnemiesDead() const;
+    float waveSpeedMult() const { return std::min(1.f + (wave - 1) * 0.1f, 2.f); }
 };

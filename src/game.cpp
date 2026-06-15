@@ -49,6 +49,18 @@ static FILE* openHiScoreFile(const char* mode) {
     return nullptr;
 }
 
+static int loadHiScore() {
+    int val = 0;
+    FILE* f = openHiScoreFile("r");
+    if (f) { fscanf(f, "%d", &val); fclose(f); }
+    return val;
+}
+
+static void saveHiScore(int val) {
+    FILE* f = openHiScoreFile("w");
+    if (f) { fprintf(f, "%d\n", val); fclose(f); }
+}
+
 // -----------------------------------------------------------------------
 void Game::init() {
     const char* seedEnv = getenv("OFFENDER_SEED");
@@ -66,13 +78,11 @@ void Game::init() {
     state   = GameState::TITLE;
     hiScore = 0;
 
-    FILE* f = openHiScoreFile("r");
-    if (f) { fscanf(f, "%d", &hiScore); fclose(f); }
+    hiScore = loadHiScore();
 }
 
 void Game::shutdown() {
-    FILE* f = openHiScoreFile("w");
-    if (f) { fprintf(f, "%d\n", hiScore); fclose(f); }
+    saveHiScore(hiScore);
 
     sprites.unload();
     audio.shutdown();
@@ -128,7 +138,7 @@ void Game::spawnWaveEnemies() {
     int landerCount = 3 + wave;
     if (landerCount > MAX_ENEMIES - 4) landerCount = MAX_ENEMIES - 4;
 
-    float sm = std::min(1.f + (wave - 1) * 0.1f, 2.f);
+    float sm = waveSpeedMult();
 
     float spacing = WORLD_W / landerCount;
     for (int i = 0; i < landerCount && enemyCount < MAX_ENEMIES; i++) {
@@ -334,7 +344,7 @@ void Game::updatePlaying(float dt) {
 
     // Baiter spawning — interval shrinks by 1s per wave, minimum 8s
     float baitInterval = std::max(BAIT_SPAWN_TIME - (wave - 1) * 1.f, 8.f);
-    float sm = std::min(1.f + (wave - 1) * 0.1f, 2.f);
+    float sm = waveSpeedMult();
     baitTimer += dt;
     if (baitTimer >= baitInterval) {
         baitTimer -= baitInterval * 0.5f;
@@ -354,8 +364,9 @@ void Game::updatePlaying(float dt) {
     if (allEnemiesDead()) {
         for (int i = 0; i < humCount; i++)
             if (hums[i].alive) addScore(SC_HUM_BONUS);
-        state      = GameState::WAVE_CLEAR;
-        stateTimer = WAVE_CLEAR_PAUSE;
+        waveSurvivors  = liveHumCount();
+        state          = GameState::WAVE_CLEAR;
+        stateTimer     = WAVE_CLEAR_PAUSE;
         return;
     }
 
@@ -386,9 +397,8 @@ void Game::updatePlayerDead(float dt) {
 void Game::updateWaveClear(float dt) {
     stateTimer -= dt;
     if (stateTimer <= 0.f) {
-        int survivors = liveHumCount();
         wave++;
-        startWave(survivors);
+        startWave(waveSurvivors);
     }
 }
 
@@ -518,10 +528,12 @@ bool Game::hitPlayer(float ewx, float esy, float ew, float eh) {
 }
 
 void Game::checkCollisions() {
-    // Lasers vs enemies
+    // Lasers vs enemies and humanoids
     for (int li = 0; li < MAX_LASERS; li++) {
         Laser& la = lasers[li];
         if (!la.active) continue;
+
+        // vs enemies
         for (int ei = 0; ei < enemyCount; ei++) {
             Enemy& e = enemies[ei];
             if (!e.alive) continue;
@@ -533,8 +545,6 @@ void Game::checkCollisions() {
                 la.active = false;
                 e.alive   = false;
 
-                // Release humanoid only if this lander was actively carrying it.
-                // DESCENDING landers have a humIdx target but haven't grabbed yet.
                 if (e.type == EnemyType::LANDER &&
                     (e.lstate == LanderState::GRABBING || e.lstate == LanderState::CARRYING) &&
                     e.humIdx >= 0 && e.humIdx < humCount)
@@ -555,12 +565,10 @@ void Game::checkCollisions() {
                 break;
             }
         }
-    }
 
-    // Lasers vs humanoids (friendly fire)
-    for (int li = 0; li < MAX_LASERS; li++) {
-        Laser& la = lasers[li];
         if (!la.active) continue;
+
+        // vs humanoids (friendly fire)
         for (int hi = 0; hi < humCount; hi++) {
             Humanoid& h = hums[hi];
             if (!h.alive) continue;
@@ -832,7 +840,7 @@ void Game::drawTitle() const {
 
     // Starfield (use world stars even on title)
     for (int i = 0; i < NUM_STARS; i++) {
-        int sx = (int)(world.stars[i].x / WORLD_W * SCREEN_W);
+        int sx = (int)(world.stars[i].x / WORLD_W * GetScreenWidth());
         int sy = (int)world.stars[i].y;
         DrawPixel(sx, sy, {140, 140, 180, 255});
     }
@@ -895,7 +903,7 @@ void Game::drawWaveClear() const {
     int tw = MeasureText(buf, 52);
     DrawText(buf, (SCREEN_W - tw) / 2, SCREEN_H / 2 - 40, 52, {0, 255, 150, 255});
 
-    int bonus = liveHumCount() * SC_HUM_BONUS;
+    int bonus = waveSurvivors * SC_HUM_BONUS;
     if (bonus > 0) {
         snprintf(buf, sizeof(buf), "HUMANOID BONUS  +%d", bonus);
         int bw = MeasureText(buf, 22);
