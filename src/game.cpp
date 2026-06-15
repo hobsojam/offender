@@ -191,6 +191,7 @@ void Game::update(float dt) {
     }
 
     updateParticles(dt);
+    updatePopups(dt);
     updateShake(dt);
 
     if (state == GameState::PLAYING    || state == GameState::PAUSED ||
@@ -283,15 +284,21 @@ void Game::updatePlaying(float dt) {
         }
     }
 
-    // Update humanoids; kill doomed ones the moment they land
+    // Update humanoids; resolve landings
     for (int i = 0; i < humCount; i++) {
-        bool wasDoomed = hums[i].doomedToFall && hums[i].falling;
+        bool wasFalling = hums[i].falling;
+        bool wasDoomed  = hums[i].doomedToFall;
         hums[i].update(dt);
-        if (wasDoomed && !hums[i].falling && hums[i].alive) {
-            hums[i].alive        = false;
-            hums[i].doomedToFall = false;
-            spawnExplosion({hums[i].wx, hums[i].groundY}, {255, 80, 80, 255}, 6, 60.f);
-            audio.playExplode();
+        if (wasFalling && !hums[i].falling && hums[i].alive) {
+            if (wasDoomed) {
+                hums[i].alive        = false;
+                hums[i].doomedToFall = false;
+                spawnExplosion({hums[i].wx, hums[i].groundY}, {255, 80, 80, 255}, 6, 60.f);
+                audio.playExplode();
+            } else {
+                addScore(SC_LAND);
+                spawnPopup(hums[i].wx, hums[i].groundY - 20.f, SC_LAND, {100, 255, 100, 255});
+            }
         }
     }
 
@@ -583,6 +590,32 @@ void Game::updateParticles(float dt) {
     }
 }
 
+void Game::spawnPopup(float wx, float y, int points, Color col) {
+    for (int i = 0; i < MAX_POPUPS; i++) {
+        if (!popups[i].active) {
+            popups[i].wx      = wx;
+            popups[i].y       = y;
+            popups[i].vy      = -40.f;
+            popups[i].life    = 1.4f;
+            popups[i].maxLife = 1.4f;
+            popups[i].col     = col;
+            popups[i].active  = true;
+            snprintf(popups[i].text, sizeof(popups[i].text), "+%d", points);
+            break;
+        }
+    }
+}
+
+void Game::updatePopups(float dt) {
+    for (int i = 0; i < MAX_POPUPS; i++) {
+        ScorePopup& p = popups[i];
+        if (!p.active) continue;
+        p.y    += p.vy * dt;
+        p.life -= dt;
+        if (p.life <= 0.f) p.active = false;
+    }
+}
+
 void Game::updateShake(float dt) {
     if (shakeTimer > 0.f) {
         shakeTimer -= dt;
@@ -677,6 +710,18 @@ void Game::drawPlaying() const {
         float sx = wsX(p.pos.x, world.camX) + shakeX;
         float sy = p.pos.y + shakeY;
         DrawCircle((int)sx, (int)sy, p.size * alpha, c);
+    }
+
+    // Score popups
+    for (int i = 0; i < MAX_POPUPS; i++) {
+        const ScorePopup& p = popups[i];
+        if (!p.active) continue;
+        float alpha = p.life / p.maxLife;
+        Color c = p.col;
+        c.a = (unsigned char)(alpha * 255.f);
+        float sx = wsX(p.wx, world.camX) + shakeX;
+        DrawText(p.text, (int)(sx - MeasureText(p.text, 14) * 0.5f),
+                 (int)(p.y + shakeY), 14, c);
     }
 
     // Radar + HUD (always on top, no shake)

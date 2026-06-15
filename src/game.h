@@ -9,6 +9,15 @@
 
 enum class GameState { TITLE, PLAYING, PAUSED, PLAYER_DEAD, WAVE_CLEAR, GAME_OVER };
 
+struct ScorePopup {
+    float wx, y;        // world X, screen Y of spawn point
+    float vy;           // drifts upward
+    float life, maxLife;
+    char  text[12];
+    Color col;
+    bool  active;
+};
+
 class Game {
 public:
     void      init();
@@ -41,7 +50,8 @@ private:
     int        enemyCount               = 0;
     Humanoid   hums[HUM_COUNT]          = {};
     int        humCount                 = 0;
-    Particle   particles[MAX_PARTICLES] = {};
+    Particle    particles[MAX_PARTICLES] = {};
+    ScorePopup  popups[MAX_POPUPS]      = {};
 
     AudioFX    audio;
     Sprites    sprites;
@@ -65,7 +75,9 @@ private:
     bool hitPlayer(float ewx, float esy, float ew, float eh);
 
     void spawnExplosion(Vector2 pos, Color col, int count = 14, float spd = 110.f);
+    void spawnPopup(float wx, float y, int points, Color col);
     void updateParticles(float dt);
+    void updatePopups(float dt);
     void updateShake(float dt);
 
     void drawPlaying()   const;
