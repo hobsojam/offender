@@ -1,6 +1,8 @@
 #pragma once
 #include "entity.h"
 
+struct Sprites;  // forward — full def in sprites.h
+
 struct Humanoid {
     float wx;         // world X
     float groundY;    // resting screen Y (on terrain)
@@ -13,5 +15,5 @@ struct Humanoid {
 
     void init(float worldX, float terrrainY);
     void update(float dt);
-    void draw(float camX, float shakeX, float shakeY) const;
+    void draw(float camX, float shakeX, float shakeY, const Sprites& spr) const;
 };

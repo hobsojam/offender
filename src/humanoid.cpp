@@ -1,4 +1,5 @@
 #include "humanoid.h"
+#include "sprites.h"
 #include <cmath>
 
 void Humanoid::init(float worldX, float terrainY) {
@@ -26,15 +27,12 @@ void Humanoid::update(float dt) {
     }
 }
 
-void Humanoid::draw(float camX, float shakeX, float shakeY) const {
+void Humanoid::draw(float camX, float shakeX, float shakeY, const Sprites& spr) const {
     if (!alive) return;
     float sx = wsX(wx, camX) + shakeX;
-    float sy = y - HUM_H + shakeY;  // top of humanoid
+    float sy = y - HUM_H + shakeY;  // top of sprite = top of humanoid AABB
 
-    // Little stick figure: head + body
-    DrawCircle((int)sx, (int)(sy + 3.f), 3.f, {255, 200, 150, 255});
-    DrawLine((int)sx, (int)(sy + 6.f), (int)sx, (int)(sy + HUM_H - 2.f), {255, 200, 150, 255});
-    DrawLine((int)(sx - 3.f), (int)(sy + 8.f),  (int)(sx + 3.f), (int)(sy + 8.f),  {255, 200, 150, 255});
-    DrawLine((int)(sx - 3.f), (int)(sy + HUM_H), (int)sx, (int)(sy + HUM_H - 4.f), {255, 200, 150, 255});
-    DrawLine((int)(sx + 3.f), (int)(sy + HUM_H), (int)sx, (int)(sy + HUM_H - 4.f), {255, 200, 150, 255});
+    Rectangle src  = {0.f, 0.f, (float)spr.humanoid.width, (float)spr.humanoid.height};
+    Rectangle dest = {sx - HUM_W * 0.5f, sy, HUM_W, HUM_H};
+    DrawTexturePro(spr.humanoid, src, dest, {0.f, 0.f}, 0.f, WHITE);
 }

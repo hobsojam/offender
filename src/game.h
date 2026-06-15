@@ -5,6 +5,7 @@
 #include "enemies.h"
 #include "humanoid.h"
 #include "audio.h"
+#include "sprites.h"
 
 enum class GameState { TITLE, PLAYING, PAUSED, PLAYER_DEAD, WAVE_CLEAR, GAME_OVER };
 
@@ -44,6 +45,7 @@ private:
     Particle   particles[MAX_PARTICLES] = {};
 
     AudioFX    audio;
+    Sprites    sprites;
 
     void startNewGame();
     void startWave();

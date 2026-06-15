@@ -1,5 +1,6 @@
 #include "enemies.h"
 #include "humanoid.h"
+#include "sprites.h"
 #include <cmath>
 #include <cstdlib>
 
@@ -213,54 +214,35 @@ void Enemy::update(float dt, const Vector2& pWPos,
 }
 
 // -----------------------------------------------------------------------
-void Enemy::draw(float camX, float shakeX, float shakeY) const {
+void Enemy::draw(float camX, float shakeX, float shakeY, const Sprites& spr) const {
     if (!alive) return;
     float sx = wsX(wpos.x, camX) + shakeX;
     float sy = wpos.y + shakeY;
-    float hw = halfW();
-    float hh = halfH();
 
     switch (type) {
     case EnemyType::LANDER: {
-        // Drawn to fit within the collision AABB (sy-hh .. sy+hh) so the
-        // visual top matches what the laser can actually hit.
-        Color body = {220, 80, 80, 255};
-        Color dome = {255, 130, 130, 255};
-        // Main body saucer
-        DrawRectangle((int)(sx - hw), (int)(sy - 3.f), (int)(hw * 2.f), (int)(hh - 1.f), body);
-        // Dome cap — sits at very top of AABB
-        DrawCircle((int)sx, (int)(sy - hh + 5.f), 5, dome);
-        // Undercarriage / legs within lower AABB half
-        DrawLine((int)(sx - hw * 0.5f), (int)(sy + 2.f),
-                 (int)(sx - hw),        (int)(sy + hh),   body);
-        DrawLine((int)(sx + hw * 0.5f), (int)(sy + 2.f),
-                 (int)(sx + hw),        (int)(sy + hh),   body);
-        // Window
-        DrawCircle((int)sx, (int)(sy - 1.f), 3, {255, 230, 230, 200});
+        float dw = 24.f, dh = 21.f;
+        Rectangle src  = {0.f, 0.f, (float)spr.lander.width, (float)spr.lander.height};
+        Rectangle dest = {sx - dw * 0.5f, sy - dh * 0.5f, dw, dh};
+        DrawTexturePro(spr.lander, src, dest, {0.f, 0.f}, 0.f, WHITE);
         break;
     }
     case EnemyType::MUTANT: {
-        // Jagged diamond - mutant (purple)
-        Color body = {180, 60, 220, 255};
-        Vector2 top   = {sx,          sy - hh};
-        Vector2 right = {sx + hw,     sy};
-        Vector2 bot   = {sx,          sy + hh};
-        Vector2 left  = {sx - hw,     sy};
-        DrawTriangle(top, left, right, body);
-        DrawTriangle(bot, right, left, body);
-        // Spikes
-        DrawLine((int)sx, (int)(sy - hh), (int)sx, (int)(sy - hh - 6.f), {255, 140, 255, 255});
-        DrawLine((int)(sx + hw), (int)sy,  (int)(sx + hw + 6.f), (int)sy, {255, 140, 255, 255});
-        DrawLine((int)(sx - hw), (int)sy,  (int)(sx - hw - 6.f), (int)sy, {255, 140, 255, 255});
+        float dw = 21.f, dh = 21.f;
+        Rectangle src  = {0.f, 0.f, (float)spr.mutant.width, (float)spr.mutant.height};
+        Rectangle dest = {sx - dw * 0.5f, sy - dh * 0.5f, dw, dh};
+        DrawTexturePro(spr.mutant, src, dest, {0.f, 0.f}, 0.f, WHITE);
         break;
     }
     case EnemyType::BAITER: {
-        // Thin horizontal scanner (yellow)
-        Color body = {255, 220, 0, 255};
-        DrawRectangle((int)(sx - hw), (int)(sy - hh), (int)(hw * 2.f), (int)(hh * 2.f), body);
-        DrawCircle((int)sx, (int)sy, (int)hh - 1, {255, 255, 80, 255});
-        // Scanner line
+        float dw = 24.f, dh = 12.f;
+        Rectangle src  = {0.f, 0.f, (float)spr.baiter.width, (float)spr.baiter.height};
+        Rectangle dest = {sx - dw * 0.5f, sy - dh * 0.5f, dw, dh};
+        DrawTexturePro(spr.baiter, src, dest, {0.f, 0.f}, 0.f, WHITE);
+        // Rotating scanner line drawn on top
         float scan = fmodf(wobble, 2.f * PI);
+        float hw = halfW();
+        float hh = halfH();
         DrawLine((int)sx, (int)sy,
                  (int)(sx + cosf(scan) * hw),
                  (int)(sy + sinf(scan) * hh), {255, 80, 80, 255});
