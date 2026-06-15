@@ -27,6 +27,8 @@ static std::string hiScorePath() {
                             ".");
 }
 
+static constexpr const char* FALLBACK_HISCORE_PATH = "hiscore.dat";
+
 static bool ensureParentDirectory(const std::string& path) {
     std::filesystem::path fsPath(path);
     if (!fsPath.has_parent_path()) return true;
@@ -43,8 +45,8 @@ static FILE* openHiScoreFile(const char* mode) {
             return f;
     }
 
-    if (std::string fallback = JoinPath(".", "hiscore.dat"); fallback != path)
-        return fopen(fallback.c_str(), mode);
+    if (path != FALLBACK_HISCORE_PATH)
+        return fopen(FALLBACK_HISCORE_PATH, mode);
 
     return nullptr;
 }
