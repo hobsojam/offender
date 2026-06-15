@@ -26,10 +26,10 @@ static constexpr float P_MIN_Y          = PLAY_TOP + 20.f;
 static constexpr float P_MAX_Y          = 555.f;
 
 // Laser
-static constexpr float LASER_SPEED      = 920.f;
+static constexpr float LASER_SPEED      = 1840.f;
 static constexpr float LASER_LIFE       = 0.65f;
 static constexpr int   MAX_LASERS       = 4;
-static constexpr float LASER_W          = 14.f;
+static constexpr float LASER_W          = 28.f;
 static constexpr float LASER_H          = 3.f;
 static constexpr float LASER_CD         = 0.14f;
 
