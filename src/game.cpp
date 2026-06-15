@@ -90,12 +90,12 @@ void Game::startNewGame() {
     memset(lasers,    0, sizeof(lasers));
     memset(shots,     0, sizeof(shots));
     memset(particles, 0, sizeof(particles));
-    world.init();
     startWave();
     audio.startBGM();
 }
 
 void Game::startWave(int prevSurvivors) {
+    world.init();
     baitTimer       = 0.f;
     stateTimer      = 0.f;
     planetDestroyed = false;
