@@ -3,7 +3,7 @@
 #include <random>
 
 static std::mt19937& randomEngine() {
-    static std::mt19937 engine{std::random_device{}()};
+    static std::mt19937 engine;
     return engine;
 }
 
