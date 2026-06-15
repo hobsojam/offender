@@ -11,6 +11,7 @@ struct Player {
     float   laserCD;
     float   invTimer;     // invincibility after respawn
     float   enginePhase;  // for engine glow animation
+    int     carryHumIdx;  // index of humanoid being carried (-1 if none)
 
     void  init(float worldX, float groundY);
     void  handleInput(float dt);

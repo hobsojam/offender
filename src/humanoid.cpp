@@ -7,14 +7,15 @@ void Humanoid::init(float worldX, float terrainY) {
     groundY     = terrainY;
     y           = groundY;
     vy          = 0.f;
-    alive       = true;
-    falling     = false;
-    beingCarried = false;
-    carrierIdx  = -1;
+    alive           = true;
+    falling         = false;
+    beingCarried    = false;
+    carriedByPlayer = false;
+    carrierIdx      = -1;
 }
 
 void Humanoid::update(float dt) {
-    if (!alive || beingCarried) return;
+    if (!alive || beingCarried || carriedByPlayer) return;
     if (falling) {
         vy += 200.f * dt;  // gravity
         if (vy > HUM_FALL_SPD) vy = HUM_FALL_SPD;
