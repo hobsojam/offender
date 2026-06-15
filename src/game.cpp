@@ -401,8 +401,18 @@ void Game::doHyperspace() {
     player.pos.x = newX;
     player.pos.y = newY;
     player.vel   = {0.f, 0.f};
-    player.invTimer = INVINCIBLE_TIME * 0.5f;
     spawnExplosion({newX, newY}, {100, 200, 255, 255}, 12, 90.f);
+
+    // 10% chance hyperspace kills you
+    if (randf(0.f, 1.f) < 0.1f) {
+        spawnExplosion({newX, newY}, {255, 200, 80, 255}, 20, 130.f);
+        player.alive = false;
+        shakeTimer   = SHAKE_DURATION;
+        startRespawn();
+        return;
+    }
+
+    player.invTimer = INVINCIBLE_TIME * 0.5f;
 }
 
 void Game::addScore(int points) {
