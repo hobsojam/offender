@@ -89,38 +89,39 @@ static const char* const LANDER_PIX[14] = {
 
 // ── Mutant: 14w × 14h  ────────────────────────────────────────────────────────
 //
-//  Perfect diamond, three-shade purple with yellow core glow at centre.
+//  Alien creature: antennae, rounded torso with core glow, four spreading
+//  appendages at the bottom — same design language as the lander.
 //
 static const char* const MUTANT_PIX[14] = {
-    "......m.......",  // row  0
-    ".....mMm......",  // row  1
-    "....mMSMm.....",  // row  2
-    "...mMSSSMm....",  // row  3
-    "..mMSSSSSMm...",  // row  4
-    ".mMSSSSSSSMm..",  // row  5
-    "mMSSSSCSSSSMm.",  // row  6  core glow
-    "mMSSSSCSSSSMm.",  // row  7  core glow
-    ".mMSSSSSSSMm..",  // row  8
-    "..mMSSSSSMm...",  // row  9
-    "...mMSSSMm....",  // row 10
-    "....mMSMm.....",  // row 11
-    ".....mMm......",  // row 12
-    "......m.......",  // row 13
+    "......mm......",  // row  0  antennae tips
+    ".....mSSm.....",  // row  1  antennae
+    "....mMSSMm....",  // row  2  head top
+    "...mMSSSSMm...",  // row  3  head
+    "..mMSSSSSSMm..",  // row  4  upper body
+    ".mMSSSccSSSMm.",  // row  5  body + core glow
+    ".mMSSSccSSSMm.",  // row  6  body + core glow
+    "..mMSSSSSSMm..",  // row  7  lower body
+    "m..mMSSSSMm..m",  // row  8  appendages branch out
+    "m...mMSSMm...m",  // row  9
+    "m....mSSm....m",  // row 10
+    ".m....mm....m.",  // row 11  appendage tips curl in
+    "..............",  // row 12
+    "..............",  // row 13
 };
 
 // ── Baiter: 16w × 8h  ─────────────────────────────────────────────────────────
 //
-//  Low-profile gold lens; scanner dot at centre.  Rotating scan line is
-//  drawn on top of the sprite in Enemy::draw() using the existing wobble field.
+//  Mini saucer: small dome cockpit on top, wide flat body, tapering underside.
+//  Scanner dot at centre; rotating scan line drawn on top in Enemy::draw().
 //
 static const char* const BAITER_PIX[8] = {
     "................",  // row 0
-    "....gGGGGGGGg...",  // row 1
-    "..ggGGGGGGGGgg..",  // row 2
-    "gGGGGGGGGGGGGGGg",  // row 3
-    "gGGGGGGrGGGGGGGg",  // row 4  scanner centre dot
-    "..ggGGGGGGGGgg..",  // row 5
-    "....gGGGGGGGg...",  // row 6
+    ".......Gg.......",  // row 1  dome tip
+    ".....gGGGGg.....",  // row 2  dome base
+    "gGGGGGGGGGGGGGGg",  // row 3  full-width body
+    "gGGGGGGrGGGGGGGg",  // row 4  body + scanner centre dot
+    "..ggGGGGGGGGgg..",  // row 5  underside narrows
+    "....gGGGGGGg....",  // row 6  underlight taper
     "................",  // row 7
 };
 
