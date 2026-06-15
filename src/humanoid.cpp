@@ -7,10 +7,11 @@ void Humanoid::init(float worldX, float terrainY) {
     groundY     = terrainY;
     y           = groundY;
     vy          = 0.f;
-    alive       = true;
-    falling     = false;
+    alive        = true;
+    falling      = false;
     beingCarried = false;
-    carrierIdx  = -1;
+    doomedToFall = false;
+    carrierIdx   = -1;
 }
 
 void Humanoid::update(float dt) {

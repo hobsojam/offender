@@ -283,9 +283,17 @@ void Game::updatePlaying(float dt) {
         }
     }
 
-    // Update humanoids
-    for (int i = 0; i < humCount; i++)
+    // Update humanoids; kill doomed ones the moment they land
+    for (int i = 0; i < humCount; i++) {
+        bool wasDoomed = hums[i].doomedToFall && hums[i].falling;
         hums[i].update(dt);
+        if (wasDoomed && !hums[i].falling && hums[i].alive) {
+            hums[i].alive        = false;
+            hums[i].doomedToFall = false;
+            spawnExplosion({hums[i].wx, hums[i].groundY}, {255, 80, 80, 255}, 6, 60.f);
+            audio.playExplode();
+        }
+    }
 
     // Baiter spawning
     baitTimer += dt;
@@ -435,12 +443,13 @@ void Game::releaseHumanoid(int humIdx, float worldX, bool falling) {
     };
     ReleaseHumanoid(releaseState, releaseX, world.terrainY(releaseX), falling);
 
-    h.wx = releaseState.wx;
-    h.y = releaseState.y;
-    h.groundY = releaseState.groundY;
-    h.vy = releaseState.vy;
-    h.falling = releaseState.falling;
+    h.wx           = releaseState.wx;
+    h.y            = releaseState.y;
+    h.groundY      = releaseState.groundY;
+    h.vy           = releaseState.vy;
+    h.falling      = releaseState.falling;
     h.beingCarried = releaseState.beingCarried;
+    h.doomedToFall = falling && (h.y < SCREEN_H * 0.5f);
 }
 
 // -----------------------------------------------------------------------
@@ -528,12 +537,13 @@ void Game::checkCollisions() {
         float dy = absf(player.pos.y - h.y);
         if (dx < CATCH_DIST && dy < CATCH_DIST) {
             float terr = world.terrainY(player.pos.x);
-            h.wx          = player.pos.x;
-            h.groundY     = terr;
-            h.y           = terr;
-            h.vy          = 0.f;
-            h.falling     = false;
+            h.wx           = player.pos.x;
+            h.groundY      = terr;
+            h.y            = terr;
+            h.vy           = 0.f;
+            h.falling      = false;
             h.beingCarried = false;
+            h.doomedToFall = false;
             addScore(SC_CATCH);
             audio.playRescue();
         }
