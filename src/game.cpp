@@ -2,6 +2,7 @@
 #include "game_logic.h"
 #include "radar.h"
 #include "hud.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <cstdio>
@@ -94,18 +95,19 @@ void Game::startNewGame() {
     audio.startBGM();
 }
 
-void Game::startWave() {
+void Game::startWave(int prevSurvivors) {
     baitTimer       = 0.f;
     stateTimer      = 0.f;
     planetDestroyed = false;
     enemyCount      = 0;
-    humCount   = 0;
+    humCount        = 0;
     memset(enemies, 0, sizeof(enemies));
     memset(hums,    0, sizeof(hums));
 
     // Place humanoids on terrain at even intervals with some jitter
-    humCount = HUM_COUNT;
-    float spacing = WORLD_W / HUM_COUNT;
+    humCount = (prevSurvivors < 0) ? HUM_COUNT
+                                   : std::min(prevSurvivors + 1, HUM_COUNT);
+    float spacing = WORLD_W / humCount;
     for (int i = 0; i < humCount; i++) {
         float wx = randf(i * spacing, (i + 1) * spacing);
         float gy = world.terrainY(wx);
@@ -335,8 +337,9 @@ void Game::updatePlayerDead(float dt) {
 void Game::updateWaveClear(float dt) {
     stateTimer -= dt;
     if (stateTimer <= 0.f) {
+        int survivors = liveHumCount();
         wave++;
-        startWave();
+        startWave(survivors);
     }
 }
 
