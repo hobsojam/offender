@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <string>
 
 static void require(bool condition, const char* message) {
     if (!condition) {
@@ -69,11 +70,47 @@ static void testReleaseHumanoidGroundsNonFallingState() {
     require(!state.beingCarried, "grounded release should clear carried state");
 }
 
+static void testBuildHiScorePathPrefersAppData() {
+    std::string path = BuildHiScorePath("C:\\Users\\me\\AppData\\Roaming",
+                                        "/tmp/xdg", "/home/me", ".");
+
+#ifdef _WIN32
+    require(path == "C:\\Users\\me\\AppData\\Roaming\\Offender\\hiscore.dat" ||
+            path == "C:\\Users\\me\\AppData\\Roaming/Offender/hiscore.dat",
+            "hi-score path should prefer app data");
+#else
+    require(path == "/tmp/xdg/offender/hiscore.dat",
+            "non-Windows hi-score path should ignore app data");
+#endif
+}
+
+static void testBuildHiScorePathUsesXdgBeforeHome() {
+    std::string path = BuildHiScorePath("", "/home/me/.local/share", "/home/me", ".");
+
+#ifdef _WIN32
+    require(path == ".\\hiscore.dat", "Windows should ignore XDG and HOME values");
+#else
+    require(path == "/home/me/.local/share/offender/hiscore.dat" ||
+            path == "/home/me/.local/share\\offender\\hiscore.dat",
+            "hi-score path should use XDG data home before HOME");
+#endif
+}
+
+static void testBuildHiScorePathFallsBackToWorkingDirectory() {
+    std::string path = BuildHiScorePath("", "", "", ".");
+
+    require(path == "./hiscore.dat" || path == ".\\hiscore.dat",
+            "hi-score path should fall back to working directory");
+}
+
 int main() {
     testAddScoreUpdatesScoreAndHiScore();
     testAddScoreAwardsEachMilestoneCrossed();
     testAddScoreIgnoresNonPositivePoints();
     testReleaseHumanoidUsesReleaseGroundForFallingState();
     testReleaseHumanoidGroundsNonFallingState();
+    testBuildHiScorePathPrefersAppData();
+    testBuildHiScorePathUsesXdgBeforeHome();
+    testBuildHiScorePathFallsBackToWorkingDirectory();
     return 0;
 }

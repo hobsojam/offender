@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 
 struct ScoreState {
     int score;
@@ -42,4 +43,37 @@ inline void ReleaseHumanoid(HumanoidReleaseState& state, float worldX,
 
     if (!falling && state.y > state.groundY)
         state.y = state.groundY;
+}
+
+inline std::string JoinPath(const std::string& dir, const std::string& name) {
+    if (dir.empty()) return name;
+
+    char last = dir[dir.size() - 1];
+    if (last == '/' || last == '\\') return dir + name;
+
+#ifdef _WIN32
+    return dir + "\\" + name;
+#else
+    return dir + "/" + name;
+#endif
+}
+
+inline std::string BuildHiScorePath(const std::string& appData,
+                                    const std::string& xdgDataHome,
+                                    const std::string& home,
+                                    const std::string& fallbackDir) {
+#ifdef _WIN32
+    if (!appData.empty())
+        return JoinPath(JoinPath(appData, "Offender"), "hiscore.dat");
+#else
+    (void)appData;
+
+    if (!xdgDataHome.empty())
+        return JoinPath(JoinPath(xdgDataHome, "offender"), "hiscore.dat");
+
+    if (!home.empty())
+        return JoinPath(JoinPath(JoinPath(home, ".local"), "share"), "offender/hiscore.dat");
+#endif
+
+    return JoinPath(fallbackDir, "hiscore.dat");
 }

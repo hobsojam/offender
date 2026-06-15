@@ -16,6 +16,8 @@ cmake --build build
 Output: `build\offender.exe` (~2.3 MB, self-contained)
 
 For deterministic debugging runs, set `OFFENDER_SEED` before launching the game.
+The hi-score file is stored in the user's app data directory when available,
+with a fallback to `hiscore.dat` in the launch directory.
 
 ## Run
 
