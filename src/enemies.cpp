@@ -124,10 +124,7 @@ void Enemy::updateLander(float dt, const Vector2& pWPos,
         h.y  = wpos.y + LAND_H * 0.5f + HUM_H * 0.5f;
 
         if (wpos.y <= PLAY_TOP + 20.f) {
-            // Reached top — become mutant (signalled to Game by returning humIdx still set)
-            // Game checks for this: if CARRYING and wpos.y <= PLAY_TOP + 20 → mutant
-            // We flag via stateCD = -999 as a sentinel
-            stateCD = -999.f;
+            lstate = LanderState::ASCENDED;
         }
     }
 

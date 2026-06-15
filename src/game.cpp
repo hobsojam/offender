@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
+#include <chrono>
 
 static float randf(float lo, float hi) {
     return lo + (float)rand() / (float)RAND_MAX * (hi - lo);
@@ -12,7 +13,12 @@ static float randf(float lo, float hi) {
 
 // -----------------------------------------------------------------------
 void Game::init() {
-    srand(42);
+    const char* seedEnv = getenv("OFFENDER_SEED");
+    unsigned seed = seedEnv ? (unsigned)strtoul(seedEnv, nullptr, 10)
+                            : (unsigned)std::chrono::system_clock::now()
+                                  .time_since_epoch()
+                                  .count();
+    srand(seed);
     world.init();
     audio.init();
     sprites.load();
@@ -40,7 +46,6 @@ void Game::startNewGame() {
     lives      = START_LIVES;
     bombs      = START_BOMBS;
     wave       = 1;
-    lastElScore = 0;
     memset(lasers,    0, sizeof(lasers));
     memset(shots,     0, sizeof(shots));
     memset(particles, 0, sizeof(particles));
@@ -205,10 +210,8 @@ void Game::updatePlaying(float dt) {
 
         // Check if lander reached top while carrying → become mutant
         if (e.type == EnemyType::LANDER &&
-            e.lstate == LanderState::CARRYING &&
-            e.stateCD <= -100.f)
+            e.lstate == LanderState::ASCENDED)
         {
-            // Release humanoid (it dies — abducted)
             if (e.humIdx >= 0 && e.humIdx < humCount) {
                 hums[e.humIdx].beingCarried = false;
                 hums[e.humIdx].alive = false;  // abducted!
@@ -261,8 +264,7 @@ void Game::updatePlaying(float dt) {
     // Check wave clear
     if (allEnemiesDead()) {
         for (int i = 0; i < humCount; i++)
-            if (hums[i].alive) score += SC_HUM_BONUS;
-        if (score > hiScore) hiScore = score;
+            if (hums[i].alive) addScore(SC_HUM_BONUS);
         state      = GameState::WAVE_CLEAR;
         stateTimer = WAVE_CLEAR_PAUSE;
         return;
@@ -325,23 +327,21 @@ void Game::smartBomb() {
     audio.playBomb();
 
     // Destroy all on-screen enemies
-    float left  = world.camX;
-    float right = wrapX(world.camX + SCREEN_W);
-
     for (int i = 0; i < enemyCount; i++) {
         Enemy& e = enemies[i];
         if (!e.alive) continue;
         float sx = wsX(e.wpos.x, world.camX);
         if (sx >= -10.f && sx <= SCREEN_W + 10.f) {
-            if (e.type == EnemyType::LANDER && e.humIdx >= 0 && e.humIdx < humCount) {
-                hums[e.humIdx].beingCarried = false;
-                hums[e.humIdx].falling      = true;
-                hums[e.humIdx].vy           = 0.f;
+            if (e.type == EnemyType::LANDER &&
+                (e.lstate == LanderState::GRABBING || e.lstate == LanderState::CARRYING) &&
+                e.humIdx >= 0 && e.humIdx < humCount)
+            {
+                releaseHumanoid(e.humIdx, e.wpos.x, true);
             }
             spawnExplosion(e.wpos, {255, 200, 50, 255}, 16, 140.f);
             int pts = (e.type == EnemyType::LANDER) ? SC_LANDER :
                       (e.type == EnemyType::MUTANT) ? SC_MUTANT : SC_BAITER;
-            score += pts;
+            addScore(pts);
             e.alive = false;
         }
     }
@@ -349,7 +349,6 @@ void Game::smartBomb() {
     // Screen flash
     shakeTimer = SHAKE_DURATION;
     shakeX = shakeY = 0.f;
-    if (score > hiScore) hiScore = score;
 }
 
 void Game::doHyperspace() {
@@ -361,6 +360,35 @@ void Game::doHyperspace() {
     player.vel   = {0.f, 0.f};
     player.invTimer = INVINCIBLE_TIME * 0.5f;
     spawnExplosion({newX, newY}, {100, 200, 255, 255}, 12, 90.f);
+}
+
+void Game::addScore(int points) {
+    if (points <= 0) return;
+
+    int oldScore = score;
+    score += points;
+    if (score > hiScore) hiScore = score;
+
+    int oldMilestone = oldScore / EXTRA_LIFE_EVERY;
+    int newMilestone = score / EXTRA_LIFE_EVERY;
+    if (newMilestone > oldMilestone) {
+        lives += newMilestone - oldMilestone;
+        audio.playExtraLife();
+    }
+}
+
+void Game::releaseHumanoid(int humIdx, float worldX, bool falling) {
+    if (humIdx < 0 || humIdx >= humCount) return;
+
+    Humanoid& h = hums[humIdx];
+    h.wx = wrapX(worldX);
+    h.groundY = world.terrainY(h.wx);
+    h.beingCarried = false;
+    h.falling = falling;
+    h.vy = 0.f;
+
+    if (!falling && h.y > h.groundY)
+        h.y = h.groundY;
 }
 
 // -----------------------------------------------------------------------
@@ -393,22 +421,12 @@ void Game::checkCollisions() {
                     (e.lstate == LanderState::GRABBING || e.lstate == LanderState::CARRYING) &&
                     e.humIdx >= 0 && e.humIdx < humCount)
                 {
-                    hums[e.humIdx].beingCarried = false;
-                    hums[e.humIdx].falling      = true;
-                    hums[e.humIdx].vy           = 0.f;
+                    releaseHumanoid(e.humIdx, e.wpos.x, true);
                 }
 
                 int pts = (e.type == EnemyType::LANDER) ? SC_LANDER :
                           (e.type == EnemyType::MUTANT)  ? SC_MUTANT  : SC_BAITER;
-                score += pts;
-                if (score > hiScore) hiScore = score;
-
-                // Extra life
-                if (score / EXTRA_LIFE_EVERY > lastElScore / EXTRA_LIFE_EVERY) {
-                    lives++;
-                    lastElScore = score;
-                    audio.playExtraLife();
-                }
+                addScore(pts);
 
                 spawnExplosion(e.wpos,
                     e.type == EnemyType::MUTANT ? Color{200,80,255,255} :
@@ -464,8 +482,7 @@ void Game::checkCollisions() {
             h.vy          = 0.f;
             h.falling     = false;
             h.beingCarried = false;
-            score += SC_CATCH;
-            if (score > hiScore) hiScore = score;
+            addScore(SC_CATCH);
             audio.playRescue();
         }
     }

@@ -25,7 +25,6 @@ private:
     int        lives        = START_LIVES;
     int        wave         = 1;
     int        bombs        = START_BOMBS;
-    int        lastElScore  = 0;
     float      stateTimer   = 0.f;
     float      baitTimer        = 0.f;
     bool       planetDestroyed  = false;
@@ -59,6 +58,8 @@ private:
     void fireLaser();
     void smartBomb();
     void doHyperspace();
+    void addScore(int points);
+    void releaseHumanoid(int humIdx, float worldX, bool falling);
 
     void checkCollisions();
     bool hitPlayer(float ewx, float esy, float ew, float eh);

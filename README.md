@@ -15,6 +15,8 @@ cmake --build build
 
 Output: `build\offender.exe` (~2.3 MB, self-contained)
 
+For deterministic debugging runs, set `OFFENDER_SEED` before launching the game.
+
 ## Run
 
 ```
