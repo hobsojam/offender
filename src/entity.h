@@ -40,4 +40,4 @@ struct Particle {
 };
 
 enum class EnemyType  { LANDER, MUTANT, BAITER };
-enum class LanderState { WANDERING, DESCENDING, GRABBING, CARRYING };
+enum class LanderState { WANDERING, DESCENDING, GRABBING, CARRYING, ASCENDED };

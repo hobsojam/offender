@@ -15,7 +15,7 @@ set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(BUILD_GAMES    OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(raylib)
 
-file(GLOB SOURCES "src/*.cpp")
+file(GLOB SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 add_executable(offender WIN32 ${SOURCES})
 target_include_directories(offender PRIVATE src)
 target_link_libraries(offender PRIVATE raylib)
