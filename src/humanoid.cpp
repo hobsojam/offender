@@ -11,6 +11,7 @@ void Humanoid::init(float worldX, float terrainY) {
     falling      = false;
     beingCarried = false;
     doomedToFall = false;
+    targeted     = false;
     carrierIdx   = -1;
 }
 

@@ -70,6 +70,7 @@ static constexpr int   SC_RESCUE        = 500;
 static constexpr int   SC_CATCH         = 250;
 static constexpr int   SC_HUM_BONUS     = 100;
 static constexpr int   SC_LAND          = 100;
+static constexpr int   SC_HUM_KILL      = 250;
 static constexpr int   EXTRA_LIFE_EVERY = 10000;
 
 // Game

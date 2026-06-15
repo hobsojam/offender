@@ -8,12 +8,15 @@ static float randf(float lo, float hi) {
 
 void World::init() {
     camX = 0.f;
+    float p1 = randf(0.f, 2.f * PI);
+    float p2 = randf(0.f, 2.f * PI);
+    float p3 = randf(0.f, 2.f * PI);
     for (int i = 0; i < TERR_NODES; i++) {
         float t = (float)i / TERR_NODES * 2.f * PI;
         float y = GROUND_BASE
-            + GROUND_AMP * 0.50f * sinf(t * 3.f + 0.70f)
-            + GROUND_AMP * 0.30f * sinf(t * 7.f + 1.35f)
-            + GROUND_AMP * 0.20f * sinf(t * 13.f + 2.80f);
+            + GROUND_AMP * 0.50f * sinf(t * 3.f + p1)
+            + GROUND_AMP * 0.30f * sinf(t * 7.f + p2)
+            + GROUND_AMP * 0.20f * sinf(t * 13.f + p3);
         terrain[i] = y;
     }
     for (int i = 0; i < NUM_STARS; i++)
