@@ -11,6 +11,7 @@ struct Humanoid {
     bool  alive;
     bool  falling;        // dropped by lander, in free fall
     bool  beingCarried;   // attached to a lander
+    bool  targeted;       // a lander is descending toward this humanoid
     int   carrierIdx;     // index in enemies array (-1 if none)
 
     void init(float worldX, float terrrainY);

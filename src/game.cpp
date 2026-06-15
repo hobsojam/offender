@@ -438,9 +438,10 @@ void Game::releaseHumanoid(int humIdx, float worldX, bool falling) {
     h.wx = releaseState.wx;
     h.y = releaseState.y;
     h.groundY = releaseState.groundY;
-    h.vy = releaseState.vy;
-    h.falling = releaseState.falling;
+    h.vy           = releaseState.vy;
+    h.falling      = releaseState.falling;
     h.beingCarried = releaseState.beingCarried;
+    h.targeted     = false;
 }
 
 // -----------------------------------------------------------------------
