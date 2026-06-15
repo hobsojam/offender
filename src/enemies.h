@@ -2,6 +2,7 @@
 #include "entity.h"
 
 struct Humanoid;  // forward
+struct Sprites;   // forward — full def in sprites.h
 
 struct Enemy {
     EnemyType   type;
@@ -23,7 +24,7 @@ struct Enemy {
                  // out: request to fire a shot
                  Vector2* shotOut, bool* wantShot);
 
-    void  draw(float camX, float shakeX, float shakeY) const;
+    void  draw(float camX, float shakeX, float shakeY, const Sprites& spr) const;
 
     float halfW() const;
     float halfH() const;

@@ -15,6 +15,7 @@ void Game::init() {
     srand(42);
     world.init();
     audio.init();
+    sprites.load();
     memset(particles, 0, sizeof(particles));
     memset(lasers,    0, sizeof(lasers));
     memset(shots,     0, sizeof(shots));
@@ -29,6 +30,7 @@ void Game::shutdown() {
     FILE* f = fopen("hiscore.dat", "w");
     if (f) { fprintf(f, "%d\n", hiScore); fclose(f); }
 
+    sprites.unload();
     audio.shutdown();
 }
 
@@ -558,7 +560,7 @@ void Game::drawPlaying() const {
 
     // Humanoids
     for (int i = 0; i < humCount; i++)
-        hums[i].draw(world.camX, shakeX, shakeY);
+        hums[i].draw(world.camX, shakeX, shakeY, sprites);
 
     // Shots
     for (int i = 0; i < MAX_SHOTS; i++) {
@@ -571,7 +573,7 @@ void Game::drawPlaying() const {
 
     // Enemies
     for (int i = 0; i < enemyCount; i++)
-        enemies[i].draw(world.camX, shakeX, shakeY);
+        enemies[i].draw(world.camX, shakeX, shakeY, sprites);
 
     // Lasers
     for (int i = 0; i < MAX_LASERS; i++) {
@@ -584,7 +586,7 @@ void Game::drawPlaying() const {
     }
 
     // Player
-    player.draw(world.camX, shakeX, shakeY);
+    player.draw(world.camX, shakeX, shakeY, sprites);
 
     // Particles
     for (int i = 0; i < MAX_PARTICLES; i++) {

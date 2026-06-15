@@ -1,6 +1,8 @@
 #pragma once
 #include "entity.h"
 
+struct Sprites;  // forward — full def in sprites.h
+
 struct Player {
     Vector2 pos;          // world X, screen Y
     Vector2 vel;
@@ -13,7 +15,7 @@ struct Player {
     void  init(float worldX, float groundY);
     void  handleInput(float dt);
     void  update(float dt, float groundY);
-    void  draw(float camX, float shakeX, float shakeY) const;
+    void  draw(float camX, float shakeX, float shakeY, const Sprites& spr) const;
 
     bool  canFire() const  { return laserCD <= 0.f; }
     bool  invincible() const { return invTimer > 0.f; }

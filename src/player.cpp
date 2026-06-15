@@ -1,4 +1,5 @@
 #include "player.h"
+#include "sprites.h"
 #include <cmath>
 
 void Player::init(float worldX, float groundY) {
@@ -59,35 +60,26 @@ void Player::update(float dt, float groundY) {
     enginePhase += dt * 8.f;
 }
 
-void Player::draw(float camX, float shakeX, float shakeY) const {
+void Player::draw(float camX, float shakeX, float shakeY, const Sprites& spr) const {
     if (!alive) return;
-    // Blink when invincible
     if (invTimer > 0.f && (int)(invTimer * 8.f) % 2 == 0) return;
 
     float sx = wsX(pos.x, camX) + shakeX;
     float sy = pos.y + shakeY;
 
-    // Flip direction
-    float dir = facingRight ? 1.f : -1.f;
+    // Sprite at 1.5× scale; negative source width = horizontal flip for left
+    float dw = 30.f, dh = 18.f;
+    float tw = (float)spr.player.width;
+    float th = (float)spr.player.height;
+    Rectangle src  = { facingRight ? 0.f : tw, 0.f,
+                        facingRight ? tw  : -tw, th };
+    Rectangle dest = { sx - dw * 0.5f, sy - dh * 0.5f, dw, dh };
+    DrawTexturePro(spr.player, src, dest, {0.f, 0.f}, 0.f, WHITE);
 
-    // Body
-    DrawRectangle((int)(sx - 12.f), (int)(sy - 5.f), 20, 10, {200, 200, 220, 255});
-
-    // Nose (triangle pointing forward)
-    Vector2 nTip  = {sx + dir * 18.f, sy};
-    Vector2 nTop  = {sx + dir * 8.f,  sy - 5.f};
-    Vector2 nBot  = {sx + dir * 8.f,  sy + 5.f};
-    DrawTriangle(nTip, nTop, nBot, {180, 220, 255, 255});
-
-    // Tail fin
-    Vector2 fRoot = {sx - dir * 12.f, sy};
-    Vector2 fTip  = {sx - dir * 18.f, sy - 9.f};
-    Vector2 fBase = {sx - dir * 12.f, sy - 5.f};
-    DrawTriangle(fRoot, fBase, fTip, {160, 160, 200, 255});
-
-    // Engine glow
+    // Animated engine glow drawn on top of the sprite
+    float dir  = facingRight ? 1.f : -1.f;
     float glow = 0.5f + 0.5f * sinf(enginePhase);
     unsigned char gb = (unsigned char)(180.f + glow * 75.f);
-    DrawCircle((int)(sx - dir * 14.f), (int)sy, 3.5f + glow * 2.f,
+    DrawCircle((int)(sx - dir * 13.f), (int)sy, 3.5f + glow * 2.f,
                {gb, gb, 255, 220});
 }
