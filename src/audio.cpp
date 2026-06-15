@@ -1,6 +1,7 @@
 #include "audio.h"
+#include "random.h"
 #include <cmath>
-#include <cstdlib>
+#include <vector>
 
 static const int SR = 44100;   // sample rate
 
@@ -11,7 +12,7 @@ static inline float squareWave(float phase, float duty) {
     return fmodf(phase, 1.f) < duty ? 1.f : -1.f;
 }
 static inline float noiseWave() {
-    return ((float)rand() / (float)RAND_MAX) * 2.f - 1.f;
+    return RandomFloat(-1.f, 1.f);
 }
 
 // ── envelope ───────────────────────────────────────────────────────────────
@@ -36,8 +37,7 @@ struct SynthParams {
 static Sound buildSound(const SynthParams& p) {
     int n = (int)(p.duration * SR);
     if (n < 1) n = 1;
-    short* buf = (short*)malloc(n * sizeof(short));
-    if (!buf) return Sound{};
+    std::vector<short> buf(n);
 
     float freqB = (p.freqB < 0.f) ? p.freqA : p.freqB;
     float phase = 0.f;
@@ -68,9 +68,8 @@ static Sound buildSound(const SynthParams& p) {
     w.sampleRate = SR;
     w.sampleSize = 16;
     w.channels   = 1;
-    w.data       = buf;
+    w.data       = buf.data();
     Sound s = LoadSoundFromWave(w);
-    free(buf);
     return s;
 }
 
@@ -81,8 +80,7 @@ static Sound buildArpeggio(const float* freqs, int noteCount,
     int noteN = (int)(noteDur * SR);
     if (noteN < 1) noteN = 1;
     int total = noteN * noteCount;
-    short* buf = (short*)malloc(total * sizeof(short));
-    if (!buf) return Sound{};
+    std::vector<short> buf(total);
 
     float phase = 0.f;
     for (int i = 0; i < total; i++) {
@@ -103,9 +101,8 @@ static Sound buildArpeggio(const float* freqs, int noteCount,
     w.sampleRate = SR;
     w.sampleSize = 16;
     w.channels   = 1;
-    w.data       = buf;
+    w.data       = buf.data();
     Sound s = LoadSoundFromWave(w);
-    free(buf);
     return s;
 }
 
@@ -119,8 +116,7 @@ static Sound buildBGM() {
     int noteN = (int)(60.f / 140.f / 2.f * SR);  // 8th note at 140 BPM
     if (noteN < 1) noteN = 1;
     int total = noteN * N;
-    short* buf = (short*)malloc(total * sizeof(short));
-    if (!buf) return Sound{};
+    std::vector<short> buf(total);
 
     float bPhase = 0.f, tPhase = 0.f;
     for (int i = 0; i < total; i++) {
@@ -151,9 +147,8 @@ static Sound buildBGM() {
     w.sampleRate = SR;
     w.sampleSize = 16;
     w.channels   = 1;
-    w.data       = buf;
+    w.data       = buf.data();
     Sound s = LoadSoundFromWave(w);
-    free(buf);
     return s;
 }
 
@@ -170,25 +165,22 @@ void AudioFX::init() {
     // EXPLODE — noise burst with low bass kick underneath
     {
         int n = (int)(0.38f * SR);
-        short* buf = (short*)malloc(n * sizeof(short));
-        if (buf) {
-            float phase = 0.f;
-            for (int i = 0; i < n; i++) {
-                float t   = (float)i / n;
-                float env = 1.f - t;
-                // Descending bass tone (adds thud) mixed with noise
-                float freq = 120.f * powf(30.f / 120.f, t);
-                float tone = squareWave(phase, 0.5f);
-                float nz   = noiseWave();
-                float s    = tone * 0.3f + nz * 0.7f;
-                buf[i] = (short)(0.75f * env * 32767.f * s);
-                phase += freq / SR;
-            }
-            Wave w = {}; w.frameCount=(unsigned)n; w.sampleRate=SR;
-            w.sampleSize=16; w.channels=1; w.data=buf;
-            explode = LoadSoundFromWave(w);
-            free(buf);
+        std::vector<short> buf(n);
+        float phase = 0.f;
+        for (int i = 0; i < n; i++) {
+            float t   = (float)i / n;
+            float env = 1.f - t;
+            // Descending bass tone (adds thud) mixed with noise
+            float freq = 120.f * powf(30.f / 120.f, t);
+            float tone = squareWave(phase, 0.5f);
+            float nz   = noiseWave();
+            float s    = tone * 0.3f + nz * 0.7f;
+            buf[i] = (short)(0.75f * env * 32767.f * s);
+            phase += freq / SR;
         }
+        Wave w = {}; w.frameCount=(unsigned)n; w.sampleRate=SR;
+        w.sampleSize=16; w.channels=1; w.data=buf.data();
+        explode = LoadSoundFromWave(w);
     }
 
     // ABDUCT — descending wail, lander has grabbed a humanoid
@@ -207,49 +199,43 @@ void AudioFX::init() {
     // BOMB — heavy sub-bass noise blast
     {
         int n = (int)(0.55f * SR);
-        short* buf = (short*)malloc(n * sizeof(short));
-        if (buf) {
-            float phase = 0.f;
-            for (int i = 0; i < n; i++) {
-                float t   = (float)i / n;
-                float env = powf(1.f - t, 0.6f);        // slower decay for weight
-                float freq = 80.f * powf(15.f / 80.f, t);
-                float tone = squareWave(phase, 0.5f);
-                float nz   = noiseWave();
-                float s    = tone * 0.4f + nz * 0.6f;
-                buf[i] = (short)(0.85f * env * 32767.f * s);
-                phase += freq / SR;
-            }
-            Wave w = {}; w.frameCount=(unsigned)n; w.sampleRate=SR;
-            w.sampleSize=16; w.channels=1; w.data=buf;
-            bomb = LoadSoundFromWave(w);
-            free(buf);
+        std::vector<short> buf(n);
+        float phase = 0.f;
+        for (int i = 0; i < n; i++) {
+            float t   = (float)i / n;
+            float env = powf(1.f - t, 0.6f);        // slower decay for weight
+            float freq = 80.f * powf(15.f / 80.f, t);
+            float tone = squareWave(phase, 0.5f);
+            float nz   = noiseWave();
+            float s    = tone * 0.4f + nz * 0.6f;
+            buf[i] = (short)(0.85f * env * 32767.f * s);
+            phase += freq / SR;
         }
+        Wave w = {}; w.frameCount=(unsigned)n; w.sampleRate=SR;
+        w.sampleSize=16; w.channels=1; w.data=buf.data();
+        bomb = LoadSoundFromWave(w);
     }
 
     // HYPERSPACE — rising sweep + glitchy noise, 50% duty sawtooth-ish
     {
         int n = (int)(0.32f * SR);
-        short* buf = (short*)malloc(n * sizeof(short));
-        if (buf) {
-            float phase = 0.f;
-            for (int i = 0; i < n; i++) {
-                float t   = (float)i / n;
-                float env = (t < 0.1f) ? t / 0.1f : 1.f - (t - 0.1f) / 0.9f;
-                float freq = 80.f * powf(2200.f / 80.f, t);
-                float tone = squareWave(phase, 0.5f);
-                float nz   = noiseWave();
-                // Noise fades in as pitch rises (like tearing through space)
-                float mix  = t * 0.6f;
-                float s    = tone * (1.f - mix) + nz * mix;
-                buf[i] = (short)(0.65f * env * 32767.f * s);
-                phase += freq / SR;
-            }
-            Wave w = {}; w.frameCount=(unsigned)n; w.sampleRate=SR;
-            w.sampleSize=16; w.channels=1; w.data=buf;
-            hyper = LoadSoundFromWave(w);
-            free(buf);
+        std::vector<short> buf(n);
+        float phase = 0.f;
+        for (int i = 0; i < n; i++) {
+            float t   = (float)i / n;
+            float env = (t < 0.1f) ? t / 0.1f : 1.f - (t - 0.1f) / 0.9f;
+            float freq = 80.f * powf(2200.f / 80.f, t);
+            float tone = squareWave(phase, 0.5f);
+            float nz   = noiseWave();
+            // Noise fades in as pitch rises (like tearing through space)
+            float mix  = t * 0.6f;
+            float s    = tone * (1.f - mix) + nz * mix;
+            buf[i] = (short)(0.65f * env * 32767.f * s);
+            phase += freq / SR;
         }
+        Wave w = {}; w.frameCount=(unsigned)n; w.sampleRate=SR;
+        w.sampleSize=16; w.channels=1; w.data=buf.data();
+        hyper = LoadSoundFromWave(w);
     }
 
     // DIE — descending arpeggio G4→E4→C4→A3, slow and mournful

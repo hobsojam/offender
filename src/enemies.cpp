@@ -1,12 +1,8 @@
 #include "enemies.h"
 #include "humanoid.h"
+#include "random.h"
 #include "sprites.h"
 #include <cmath>
-#include <cstdlib>
-
-static float randf(float lo, float hi) {
-    return lo + (float)rand() / (float)RAND_MAX * (hi - lo);
-}
 
 float Enemy::halfW() const {
     switch (type) {
@@ -28,12 +24,12 @@ float Enemy::halfH() const {
 void Enemy::initLander(float wx, float y, float sm) {
     type      = EnemyType::LANDER;
     wpos      = {wx, y};
-    vel       = {randf(-LAND_SPD * sm * 0.5f, LAND_SPD * sm * 0.5f), 0.f};
+    vel       = {RandomFloat(-LAND_SPD * sm * 0.5f, LAND_SPD * sm * 0.5f), 0.f};
     lstate    = LanderState::WANDERING;
     humIdx    = -1;
-    shotCD    = randf(1.f, LAND_SHOT_CD);
-    wobble    = randf(0.f, 2.f * PI);
-    stateCD   = randf(1.f, 3.f);
+    shotCD    = RandomFloat(1.f, LAND_SHOT_CD);
+    wobble    = RandomFloat(0.f, 2.f * PI);
+    stateCD   = RandomFloat(1.f, 3.f);
     speedMult = sm;
     alive     = true;
 }
@@ -43,8 +39,8 @@ void Enemy::initMutant(float wx, float y, float sm) {
     wpos      = {wx, y};
     vel       = {};
     humIdx    = -1;
-    shotCD    = randf(0.5f, MUTT_SHOT_CD);
-    wobble    = randf(0.f, 2.f * PI);
+    shotCD    = RandomFloat(0.5f, MUTT_SHOT_CD);
+    wobble    = RandomFloat(0.f, 2.f * PI);
     stateCD   = 0.f;
     speedMult = sm;
     alive     = true;
@@ -55,8 +51,8 @@ void Enemy::initBaiter(float wx, float y, float sm) {
     wpos      = {wx, y};
     vel       = {};
     humIdx    = -1;
-    shotCD    = randf(0.2f, BAIT_SHOT_CD);
-    wobble    = randf(0.f, 2.f * PI);
+    shotCD    = RandomFloat(0.2f, BAIT_SHOT_CD);
+    wobble    = RandomFloat(0.f, 2.f * PI);
     stateCD   = 0.f;
     speedMult = sm;
     alive     = true;
@@ -90,7 +86,7 @@ void Enemy::updateLander(float dt, const Vector2& pWPos,
                 hums[bestIdx].targeted = true;
                 lstate = LanderState::DESCENDING;
             } else {
-                stateCD = randf(1.5f, 3.f);
+                stateCD = RandomFloat(1.5f, 3.f);
             }
         }
     }
@@ -144,7 +140,7 @@ void Enemy::updateLander(float dt, const Vector2& pWPos,
             shotOut->y = wpos.y + (dy / dist) * SHOT_SPD;
             *wantShot = true;
         }
-        shotCD = LAND_SHOT_CD + randf(-0.5f, 0.5f);
+        shotCD = LAND_SHOT_CD + RandomFloat(-0.5f, 0.5f);
     }
 }
 
@@ -168,7 +164,7 @@ void Enemy::updateMutant(float dt, const Vector2& pWPos,
         shotOut->x = wpos.x + (dx / dist) * SHOT_SPD;
         shotOut->y = wpos.y + (dy / dist) * SHOT_SPD;
         *wantShot = true;
-        shotCD = MUTT_SHOT_CD + randf(-0.3f, 0.3f);
+        shotCD = MUTT_SHOT_CD + RandomFloat(-0.3f, 0.3f);
     }
 }
 
@@ -191,7 +187,7 @@ void Enemy::updateBaiter(float dt, const Vector2& pWPos,
         shotOut->x = wpos.x + (dx / dist) * SHOT_SPD * 1.2f;
         shotOut->y = wpos.y + (dy / dist) * SHOT_SPD * 1.2f;
         *wantShot = true;
-        shotCD = BAIT_SHOT_CD + randf(-0.1f, 0.1f);
+        shotCD = BAIT_SHOT_CD + RandomFloat(-0.1f, 0.1f);
     }
 }
 
