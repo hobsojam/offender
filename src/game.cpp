@@ -141,6 +141,15 @@ void Game::spawnWaveEnemies() {
 }
 
 void Game::startRespawn() {
+    // Drop any carried humanoid as falling before the player dies
+    if (player.carryHumIdx >= 0 && player.carryHumIdx < humCount) {
+        Humanoid& h = hums[player.carryHumIdx];
+        h.carriedByPlayer = false;
+        h.falling         = true;
+        h.vy              = 0.f;
+        player.carryHumIdx = -1;
+    }
+
     lives--;
     if (lives <= 0) {
         if (score > hiScore) hiScore = score;
@@ -220,6 +229,22 @@ void Game::updatePlaying(float dt) {
     float gy = world.terrainY(player.pos.x);
     player.update(dt, gy);
     world.updateCamera(player.pos.x, player.facingRight, dt);
+
+    // Move carried humanoid with player; deposit when player reaches terrain
+    if (player.carryHumIdx >= 0 && player.carryHumIdx < humCount) {
+        Humanoid& h = hums[player.carryHumIdx];
+        h.wx = player.pos.x;
+        h.y  = player.pos.y + P_H * 0.5f + HUM_H * 0.5f;
+        if (player.pos.y >= gy - P_H * 0.5f - 4.f) {
+            h.groundY       = gy;
+            h.y             = gy;
+            h.vy            = 0.f;
+            h.carriedByPlayer = false;
+            player.carryHumIdx = -1;
+            addScore(SC_RESCUE);
+            audio.playRescue();
+        }
+    }
 
     // Update lasers
     for (int i = 0; i < MAX_LASERS; i++) {
@@ -559,24 +584,22 @@ void Game::checkCollisions() {
         }
     }
 
-    // Player catches falling humanoids.
-    // Immediately ground them at the terrain below the catch point to prevent
-    // the catch from re-firing every frame while the player is nearby.
-    for (int i = 0; i < humCount; i++) {
-        Humanoid& h = hums[i];
-        if (!h.alive || !h.falling) continue;
-        float dx = absf(wrapDX(player.pos.x, h.wx));
-        float dy = absf(player.pos.y - h.y);
-        if (dx < CATCH_DIST && dy < CATCH_DIST) {
-            float terr = world.terrainY(player.pos.x);
-            h.wx          = player.pos.x;
-            h.groundY     = terr;
-            h.y           = terr;
-            h.vy          = 0.f;
-            h.falling     = false;
-            h.beingCarried = false;
-            addScore(SC_CATCH);
-            audio.playRescue();
+    // Player catches falling humanoids — pick up at most one.
+    if (player.carryHumIdx < 0) {
+        for (int i = 0; i < humCount; i++) {
+            Humanoid& h = hums[i];
+            if (!h.alive || !h.falling) continue;
+            float dx = absf(wrapDX(player.pos.x, h.wx));
+            float dy = absf(player.pos.y - h.y);
+            if (dx < CATCH_DIST && dy < CATCH_DIST) {
+                h.falling         = false;
+                h.beingCarried    = false;
+                h.carriedByPlayer = true;
+                player.carryHumIdx = i;
+                addScore(SC_CATCH);
+                audio.playRescue();
+                break;
+            }
         }
     }
 }
