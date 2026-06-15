@@ -72,14 +72,14 @@ static void testReleaseHumanoidGroundsNonFallingState() {
 
 static void testBuildHiScorePathPrefersAppData() {
     std::string path = BuildHiScorePath("C:\\Users\\me\\AppData\\Roaming",
-                                        "/tmp/xdg", "/home/me", ".");
+                                        "/home/me/.xdg-data", "/home/me", ".");
 
 #ifdef _WIN32
     require(path == "C:\\Users\\me\\AppData\\Roaming\\Offender\\hiscore.dat" ||
             path == "C:\\Users\\me\\AppData\\Roaming/Offender/hiscore.dat",
             "hi-score path should prefer app data");
 #else
-    require(path == "/tmp/xdg/offender/hiscore.dat",
+    require(path == "/home/me/.xdg-data/offender/hiscore.dat",
             "non-Windows hi-score path should ignore app data");
 #endif
 }
