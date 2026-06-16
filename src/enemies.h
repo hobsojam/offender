@@ -22,8 +22,8 @@ struct Enemy {
 
     void  update(float dt, const Vector2& playerWPos,
                  Humanoid* hums, int humCount, float terrainY,
-                 // out: request to fire a shot
-                 Vector2* shotOut, bool* wantShot);
+                 // out: shot velocity when *wantShot is true
+                 Vector2* shotVelOut, bool* wantShot);
 
     void  draw(float camX, float shakeX, float shakeY, const Sprites& spr) const;
 
@@ -33,9 +33,10 @@ struct Enemy {
 private:
     void updateLander(float dt, const Vector2& pWPos,
                       Humanoid* hums, int humCount, float terrainY,
-                      Vector2* shotOut, bool* wantShot);
+                      Vector2* shotVelOut, bool* wantShot);
     void updateMutant(float dt, const Vector2& pWPos,
-                      Vector2* shotOut, bool* wantShot);
+                      Vector2* shotVelOut, bool* wantShot);
     void updateBaiter(float dt, const Vector2& pWPos,
-                      Vector2* shotOut, bool* wantShot);
+                      Vector2* shotVelOut, bool* wantShot);
+    void abandonTarget(Humanoid& h);
 };

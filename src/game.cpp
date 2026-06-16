@@ -308,11 +308,8 @@ void Game::updatePlaying(float dt) {
             for (int j = 0; j < MAX_SHOTS; j++) {
                 if (!shots[j].active) {
                     shots[j].wpos = e.wpos;
-                    float dx = shotVel.x - e.wpos.x;
-                    float dy = shotVel.y - e.wpos.y;
-                    float dist = sqrtf(dx*dx + dy*dy);
-                    if (dist > 0.01f) {
-                        shots[j].vel = {dx / dist * SHOT_SPD, dy / dist * SHOT_SPD};
+                    if (shotVel.x != 0.f || shotVel.y != 0.f) {
+                        shots[j].vel = shotVel;
                     } else {
                         shots[j].vel = {SHOT_SPD, 0.f};
                     }
@@ -580,7 +577,7 @@ void Game::checkCollisions() {
                 h.beingCarried = false;
                 spawnExplosion({h.wx, h.y}, {255, 80, 80, 255}, 8, 80.f);
                 loseScore(SC_HUM_KILL);
-                spawnPopup(h.wx, h.y - 20.f, SC_HUM_KILL, {255, 80, 80, 255});
+                spawnPopup(h.wx, h.y - 20.f, -SC_HUM_KILL, {255, 80, 80, 255});
                 audio.playExplode();
                 break;
             }
@@ -681,7 +678,7 @@ void Game::spawnPopup(float wx, float y, int points, Color col) {
             popups[i].maxLife = 1.4f;
             popups[i].col     = col;
             popups[i].active  = true;
-            snprintf(popups[i].text, sizeof(popups[i].text), "+%d", points);
+            snprintf(popups[i].text, sizeof(popups[i].text), "%+d", points);
             break;
         }
     }
