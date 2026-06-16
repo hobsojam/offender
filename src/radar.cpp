@@ -57,13 +57,17 @@ void DrawRadar(float camX, float playerWX, float playerSY,
     float pry = toRadarY(playerSY);
     DrawRectangle((int)prx - 1, (int)pry - 1, 3, 3, WHITE);
 
-    // Viewport box
+    // Viewport box (two rectangles when wrapping past the world edge)
     float vx0 = toRadarX(camX);
     float vx1 = toRadarX(wrapX(camX + SCREEN_W));
+    int ry    = (int)(RADAR_Y + 2.f);
+    int rh    = (int)(RADAR_H - 4.f);
     if (vx1 > vx0) {
-        DrawRectangleLines((int)vx0, (int)(RADAR_Y + 2.f),
-                           (int)(vx1 - vx0), (int)(RADAR_H - 4.f),
-                           {255, 255, 255, 80});
+        DrawRectangleLines((int)vx0, ry, (int)(vx1 - vx0), rh, {255, 255, 255, 80});
+    } else {
+        float radarRight = RADAR_X_PAD + RADAR_W_DRAW;
+        DrawRectangleLines((int)vx0, ry, (int)(radarRight - vx0), rh, {255, 255, 255, 80});
+        DrawRectangleLines((int)RADAR_X_PAD, ry, (int)(vx1 - RADAR_X_PAD), rh, {255, 255, 255, 80});
     }
 
     // Label

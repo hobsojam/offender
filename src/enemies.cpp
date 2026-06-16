@@ -58,10 +58,17 @@ void Enemy::initBaiter(float wx, float y, float sm) {
     alive     = true;
 }
 
+void Enemy::abandonTarget(Humanoid& h) {
+    h.targeted = false;
+    lstate     = LanderState::WANDERING;
+    humIdx     = -1;
+    stateCD    = 1.f;
+}
+
 // -----------------------------------------------------------------------
 void Enemy::updateLander(float dt, const Vector2& pWPos,
                          Humanoid* hums, int humCount, float groundY,
-                         Vector2* shotOut, bool* wantShot)
+                         Vector2* shotVelOut, bool* wantShot)
 {
     wobble += dt * 2.5f;
 
@@ -92,7 +99,7 @@ void Enemy::updateLander(float dt, const Vector2& pWPos,
     }
     else if (lstate == LanderState::DESCENDING && humIdx >= 0) {
         Humanoid& h = hums[humIdx];
-        if (!h.alive) { h.targeted = false; lstate = LanderState::WANDERING; humIdx = -1; stateCD = 1.f; return; }
+        if (!h.alive) { abandonTarget(h); return; }
 
         float dx = wrapDX(wpos.x, h.wx);
         float dy = h.y - wpos.y;
@@ -109,7 +116,7 @@ void Enemy::updateLander(float dt, const Vector2& pWPos,
     }
     else if (lstate == LanderState::GRABBING && humIdx >= 0) {
         Humanoid& h = hums[humIdx];
-        if (!h.alive) { h.targeted = false; lstate = LanderState::WANDERING; humIdx = -1; stateCD = 1.f; return; }
+        if (!h.alive) { abandonTarget(h); return; }
         h.targeted     = false;  // no longer needs the reservation once carried
         h.beingCarried = true;
         h.falling      = false;
@@ -136,8 +143,8 @@ void Enemy::updateLander(float dt, const Vector2& pWPos,
         float dy = pWPos.y - wpos.y;
         float dist = sqrtf(dx*dx + dy*dy);
         if (dist > 0.01f && dist < 600.f) {
-            shotOut->x = wpos.x + (dx / dist) * SHOT_SPD;
-            shotOut->y = wpos.y + (dy / dist) * SHOT_SPD;
+            shotVelOut->x = (dx / dist) * SHOT_SPD;
+            shotVelOut->y = (dy / dist) * SHOT_SPD;
             *wantShot = true;
         }
         shotCD = LAND_SHOT_CD + RandomFloat(-0.5f, 0.5f);
@@ -145,7 +152,7 @@ void Enemy::updateLander(float dt, const Vector2& pWPos,
 }
 
 void Enemy::updateMutant(float dt, const Vector2& pWPos,
-                         Vector2* shotOut, bool* wantShot)
+                         Vector2* shotVelOut, bool* wantShot)
 {
     wobble += dt * 3.f;
     float dx = wrapDX(wpos.x, pWPos.x);
@@ -161,15 +168,15 @@ void Enemy::updateMutant(float dt, const Vector2& pWPos,
 
     shotCD -= dt;
     if (shotCD <= 0.f && dist < 500.f) {
-        shotOut->x = wpos.x + (dx / dist) * SHOT_SPD;
-        shotOut->y = wpos.y + (dy / dist) * SHOT_SPD;
+        shotVelOut->x = (dx / dist) * SHOT_SPD;
+        shotVelOut->y = (dy / dist) * SHOT_SPD;
         *wantShot = true;
         shotCD = MUTT_SHOT_CD + RandomFloat(-0.3f, 0.3f);
     }
 }
 
 void Enemy::updateBaiter(float dt, const Vector2& pWPos,
-                         Vector2* shotOut, bool* wantShot)
+                         Vector2* shotVelOut, bool* wantShot)
 {
     wobble += dt * 4.f;
     float dx = wrapDX(wpos.x, pWPos.x);
@@ -184,8 +191,8 @@ void Enemy::updateBaiter(float dt, const Vector2& pWPos,
 
     shotCD -= dt;
     if (shotCD <= 0.f && dist < 700.f) {
-        shotOut->x = wpos.x + (dx / dist) * SHOT_SPD * 1.2f;
-        shotOut->y = wpos.y + (dy / dist) * SHOT_SPD * 1.2f;
+        shotVelOut->x = (dx / dist) * SHOT_SPD * 1.2f;
+        shotVelOut->y = (dy / dist) * SHOT_SPD * 1.2f;
         *wantShot = true;
         shotCD = BAIT_SHOT_CD + RandomFloat(-0.1f, 0.1f);
     }
@@ -193,20 +200,20 @@ void Enemy::updateBaiter(float dt, const Vector2& pWPos,
 
 void Enemy::update(float dt, const Vector2& pWPos,
                    Humanoid* hums, int humCount, float groundY,
-                   Vector2* shotOut, bool* wantShot)
+                   Vector2* shotVelOut, bool* wantShot)
 {
     *wantShot = false;
     if (!alive) return;
 
     switch (type) {
         case EnemyType::LANDER:
-            updateLander(dt, pWPos, hums, humCount, groundY, shotOut, wantShot);
+            updateLander(dt, pWPos, hums, humCount, groundY, shotVelOut, wantShot);
             break;
         case EnemyType::MUTANT:
-            updateMutant(dt, pWPos, shotOut, wantShot);
+            updateMutant(dt, pWPos, shotVelOut, wantShot);
             break;
         case EnemyType::BAITER:
-            updateBaiter(dt, pWPos, shotOut, wantShot);
+            updateBaiter(dt, pWPos, shotVelOut, wantShot);
             break;
     }
 }
@@ -219,21 +226,21 @@ void Enemy::draw(float camX, float shakeX, float shakeY, const Sprites& spr) con
 
     switch (type) {
     case EnemyType::LANDER: {
-        float dw = 24.f, dh = 21.f;
+        float dw = LAND_DRAW_W, dh = LAND_DRAW_H;
         Rectangle src  = {0.f, 0.f, (float)spr.lander.width, (float)spr.lander.height};
         Rectangle dest = {sx - dw * 0.5f, sy - dh * 0.5f, dw, dh};
         DrawTexturePro(spr.lander, src, dest, {0.f, 0.f}, 0.f, WHITE);
         break;
     }
     case EnemyType::MUTANT: {
-        float dw = 21.f, dh = 21.f;
+        float dw = MUTT_DRAW_W, dh = MUTT_DRAW_H;
         Rectangle src  = {0.f, 0.f, (float)spr.mutant.width, (float)spr.mutant.height};
         Rectangle dest = {sx - dw * 0.5f, sy - dh * 0.5f, dw, dh};
         DrawTexturePro(spr.mutant, src, dest, {0.f, 0.f}, 0.f, WHITE);
         break;
     }
     case EnemyType::BAITER: {
-        float dw = 24.f, dh = 12.f;
+        float dw = BAIT_DRAW_W, dh = BAIT_DRAW_H;
         Rectangle src  = {0.f, 0.f, (float)spr.baiter.width, (float)spr.baiter.height};
         Rectangle dest = {sx - dw * 0.5f, sy - dh * 0.5f, dw, dh};
         DrawTexturePro(spr.baiter, src, dest, {0.f, 0.f}, 0.f, WHITE);

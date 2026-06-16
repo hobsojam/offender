@@ -51,6 +51,14 @@ static constexpr float BAIT_H           = 10.f;
 static constexpr float BAIT_SHOT_CD     = 0.7f;
 static constexpr float BAIT_SPAWN_TIME  = 20.f;
 
+// Enemy sprite draw sizes (larger than hitboxes — visual padding)
+static constexpr float LAND_DRAW_W    = 24.f;
+static constexpr float LAND_DRAW_H    = 21.f;
+static constexpr float MUTT_DRAW_W    = 21.f;
+static constexpr float MUTT_DRAW_H    = 21.f;
+static constexpr float BAIT_DRAW_W    = 24.f;
+static constexpr float BAIT_DRAW_H    = 12.f;
+
 static constexpr float SHOT_SPD         = 230.f;
 static constexpr float SHOT_LIFE        = 2.2f;
 
