@@ -697,6 +697,7 @@ void Game::updatePopups(float dt) {
 void Game::updateShake(float dt) {
     if (shakeTimer > 0.f) {
         shakeTimer -= dt;
+        if (shakeTimer < 0.f) shakeTimer = 0.f;
         float mag = (shakeTimer / SHAKE_DURATION) * SHAKE_AMT;
         shakeX = RandomFloat(-mag, mag);
         shakeY = RandomFloat(-mag, mag);
